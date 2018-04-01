@@ -1,5 +1,5 @@
 {
-  "name": "json-rpc-js",
+  "name": "json-rpc-2.0",
   "version": "0.1.0",
   "description": "JSON-RPC 2.0 client and server",
   "main": "./dist/index.js",
