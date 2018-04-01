@@ -4,7 +4,11 @@ import { JSONRPCServer, JSONRPC } from ".";
 import { JSONRPCErrorCode, JSONRPCResponse } from "./models";
 
 describe("JSONRPCServer", () => {
-  let server: JSONRPCServer;
+  interface ServerParams {
+    userID: string;
+  }
+
+  let server: JSONRPCServer<ServerParams>;
 
   let response: JSONRPCResponse | null;
 
@@ -26,7 +30,16 @@ describe("JSONRPCServer", () => {
     type Params = { text: string };
 
     beforeEach(() => {
-      server.addMethod("echo", ({ text }: Params) => text);
+      server.addMethod(
+        "echo",
+        ({ text }: Params) => (serverParams?: ServerParams) => {
+          if (serverParams) {
+            return `${serverParams.userID} said ${text}`;
+          } else {
+            return text;
+          }
+        }
+      );
     });
 
     describe("receiving a request to the method", () => {
@@ -46,6 +59,30 @@ describe("JSONRPCServer", () => {
           jsonrpc: JSONRPC,
           id: 0,
           result: "foo"
+        });
+      });
+    });
+
+    describe("receiving a request to the method with user ID", () => {
+      beforeEach(() => {
+        return server
+          .receive(
+            {
+              jsonrpc: JSONRPC,
+              id: 0,
+              method: "echo",
+              params: { text: "foo" }
+            },
+            { userID: "bar" }
+          )
+          .then(givenResponse => (response = givenResponse));
+      });
+
+      it("should echo the text with the user ID", () => {
+        expect(response).to.deep.equal({
+          jsonrpc: JSONRPC,
+          id: 0,
+          result: "bar said foo"
         });
       });
     });

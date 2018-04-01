@@ -8,11 +8,16 @@ import {
 } from "./models";
 
 export type SimpleJSONRPCMethod = (params?: Partial<JSONRPCParams>) => any;
-export type JSONRPCMethod = (
+export type JSONRPCMethod<ServerParams = void> = (
   request: JSONRPCRequest
-) => PromiseLike<JSONRPCResponse | null>;
+) =>
+  | JSONRPCResponsePromise
+  | ((serverParams?: ServerParams) => JSONRPCResponsePromise);
+export type JSONRPCResponsePromise = PromiseLike<JSONRPCResponse | null>;
 
-type NameToMethodDictionary = { [name: string]: JSONRPCMethod };
+type NameToMethodDictionary<ServerParams> = {
+  [name: string]: JSONRPCMethod<ServerParams>;
+};
 
 const DefaultErrorCode = 0;
 
@@ -25,8 +30,8 @@ const createMethodNotFoundResponse = (id: JSONRPCID): JSONRPCResponse => ({
   }
 });
 
-export class JSONRPCServer {
-  private nameToMethodDictionary: NameToMethodDictionary;
+export class JSONRPCServer<ServerParams = void> {
+  private nameToMethodDictionary: NameToMethodDictionary<ServerParams>;
 
   constructor() {
     this.nameToMethodDictionary = {};
@@ -36,25 +41,41 @@ export class JSONRPCServer {
     this.addMethodAdvanced(name, this.toJSONRPCMethod(method));
   }
 
-  private toJSONRPCMethod(method: SimpleJSONRPCMethod): JSONRPCMethod {
-    return (request: JSONRPCRequest): PromiseLike<JSONRPCResponse | null> =>
-      Promise.resolve(method(request.params)).then(
+  private toJSONRPCMethod(
+    method: SimpleJSONRPCMethod
+  ): JSONRPCMethod<ServerParams> {
+    return (request: JSONRPCRequest) => (
+      serverParams: ServerParams
+    ): JSONRPCResponsePromise => {
+      let response = method(request.params);
+      if (typeof response === "function") {
+        response = response(serverParams);
+      }
+      return Promise.resolve(response).then(
         (result: any) => mapResultToJSONRPCResponse(request.id, result),
         (error: any) => mapErrorToJSONRPCResponse(request.id, error)
       );
+    };
   }
 
-  addMethodAdvanced(name: string, method: JSONRPCMethod): void {
+  addMethodAdvanced(name: string, method: JSONRPCMethod<ServerParams>): void {
     this.nameToMethodDictionary = {
       ...this.nameToMethodDictionary,
       [name]: method
     };
   }
 
-  receive(request: JSONRPCRequest): PromiseLike<JSONRPCResponse | null> {
+  receive(
+    request: JSONRPCRequest,
+    serverParams?: ServerParams
+  ): JSONRPCResponsePromise {
     const method = this.nameToMethodDictionary[request.method];
     if (method) {
-      return method(request).then(response => mapResponse(request, response));
+      let response = method(request);
+      if (typeof response === "function") {
+        response = response(serverParams);
+      }
+      return response.then(response => mapResponse(request, response));
     } else if (request.id !== undefined) {
       return Promise.resolve(createMethodNotFoundResponse(request.id));
     } else {
