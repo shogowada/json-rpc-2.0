@@ -12,9 +12,9 @@ describe("JSONRPCClient", () => {
   let client: JSONRPCClient;
 
   let id: number;
-  let lastRequest: JSONRPCRequest;
-  let resolve: () => void;
-  let reject: (error: any) => void;
+  let lastRequest: JSONRPCRequest | undefined;
+  let resolve: (() => void) | undefined;
+  let reject: ((error: any) => void) | undefined;
 
   beforeEach(() => {
     id = 0;
@@ -62,7 +62,7 @@ describe("JSONRPCClient", () => {
 
     describe("succeeded on client side", () => {
       beforeEach(() => {
-        resolve();
+        resolve!();
       });
 
       describe("and succeeded on server side too", () => {
@@ -104,7 +104,7 @@ describe("JSONRPCClient", () => {
         });
 
         it("should reject with the error message", () => {
-          expect(error.message).to.equal(response.error.message);
+          expect(error.message).to.equal(response.error!.message);
         });
       });
 
@@ -160,7 +160,7 @@ describe("JSONRPCClient", () => {
       beforeEach(() => {
         expected = new Error("This is a test. Do not panic.");
 
-        reject(expected);
+        reject!(expected);
 
         return promise;
       });

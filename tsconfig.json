@@ -2,6 +2,7 @@
   "compilerOptions": {
     "noImplicitAny": true,
     "noImplicitThis": true,
+    "strictNullChecks": true,
     "outDir": "dist",
     "declaration": true,
     "module": "commonjs",
