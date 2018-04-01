@@ -1,6 +1,6 @@
 import "mocha";
 import { expect } from "chai";
-import { jsonRPCServer, JSONRPCServer, JSONRPC } from ".";
+import { JSONRPCServer, JSONRPC } from ".";
 import { JSONRPCErrorCode, JSONRPCResponse } from "./models";
 
 describe("JSONRPCServer", () => {
@@ -11,7 +11,7 @@ describe("JSONRPCServer", () => {
   beforeEach(() => {
     response = null;
 
-    server = jsonRPCServer();
+    server = new JSONRPCServer();
   });
 
   const waitUntil = (predicate: () => boolean): PromiseLike<void> => {

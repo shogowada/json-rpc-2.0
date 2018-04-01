@@ -7,8 +7,6 @@ import {
   JSONRPCErrorCode
 } from "./models";
 
-export const jsonRPCServer = () => new JSONRPCServer();
-
 export type SimpleJSONRPCMethod = (params?: Partial<JSONRPCParams>) => any;
 export type JSONRPCMethod = (
   request: JSONRPCRequest

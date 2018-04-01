@@ -1,12 +1,6 @@
 import "mocha";
 import { expect } from "chai";
-import {
-  jsonRPCClient,
-  JSONRPCClient,
-  JSONRPC,
-  JSONRPCResponse,
-  JSONRPCRequest
-} from ".";
+import { JSONRPCClient, JSONRPC, JSONRPCResponse, JSONRPCRequest } from ".";
 
 describe("JSONRPCClient", () => {
   let client: JSONRPCClient;
@@ -22,7 +16,7 @@ describe("JSONRPCClient", () => {
     resolve = undefined;
     reject = undefined;
 
-    client = jsonRPCClient(
+    client = new JSONRPCClient(
       () => ++id,
       request => {
         lastRequest = request;

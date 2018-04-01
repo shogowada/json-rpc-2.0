@@ -1,6 +1,6 @@
 import "mocha";
 import { expect } from "chai";
-import { JSONRPCServer, JSONRPCClient, jsonRPCServer, jsonRPCClient } from ".";
+import { JSONRPCServer, JSONRPCClient } from ".";
 
 describe("JSONRPCClient and JSONRPCServer", () => {
   let server: JSONRPCServer;
@@ -11,8 +11,8 @@ describe("JSONRPCClient and JSONRPCServer", () => {
   beforeEach(() => {
     id = 0;
 
-    server = jsonRPCServer();
-    client = jsonRPCClient(
+    server = new JSONRPCServer();
+    client = new JSONRPCClient(
       () => ++id,
       request => {
         return server.receive(request).then(response => {

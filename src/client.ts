@@ -9,11 +9,6 @@ import {
 export type CreateID = () => JSONRPCID;
 export type SendRequest = (request: JSONRPCRequest) => PromiseLike<void>;
 
-export const jsonRPCClient = (
-  createID: CreateID,
-  sendRequest: SendRequest
-): JSONRPCClient => new JSONRPCClient(createID, sendRequest);
-
 type Resolve = (response: JSONRPCResponse) => void;
 
 type IDToDeferredMap = Map<JSONRPCID, Resolve>;
