@@ -2,10 +2,10 @@
   "name": "json-rpc-2.0",
   "version": "0.1.2",
   "description": "JSON-RPC 2.0 client and server",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "files": [
-    "./dist"
+    "dist"
   ],
   "scripts": {
     "format": "prettier --write \"./src/**/*.ts\"",
