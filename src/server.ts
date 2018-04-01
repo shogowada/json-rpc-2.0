@@ -7,10 +7,7 @@ import {
   JSONRPCErrorCode
 } from "./models";
 
-export type SendResponse = (response: JSONRPCResponse) => PromiseLike<void>;
-
-export const jsonRPCServer = (sendResponse: SendResponse): JSONRPCServer =>
-  new JSONRPCServer(sendResponse);
+export const jsonRPCServer = () => new JSONRPCServer();
 
 export type SimpleJSONRPCMethod = (params?: Partial<JSONRPCParams>) => any;
 export type JSONRPCMethod = (
@@ -21,10 +18,19 @@ type NameToMethodDictionary = { [name: string]: JSONRPCMethod };
 
 const DefaultErrorCode = 0;
 
+const createMethodNotFoundResponse = (id: JSONRPCID): JSONRPCResponse => ({
+  jsonrpc: JSONRPC,
+  id,
+  error: {
+    code: JSONRPCErrorCode.MethodNotFound,
+    message: "Method not found"
+  }
+});
+
 export class JSONRPCServer {
   private nameToMethodDictionary: NameToMethodDictionary;
 
-  constructor(private sendResponse: SendResponse) {
+  constructor() {
     this.nameToMethodDictionary = {};
   }
 
@@ -47,23 +53,14 @@ export class JSONRPCServer {
     };
   }
 
-  receive(request: JSONRPCRequest): PromiseLike<void> {
+  receive(request: JSONRPCRequest): PromiseLike<JSONRPCResponse | null> {
     const method = this.nameToMethodDictionary[request.method];
     if (method) {
-      return method(request)
-        .then(response => mapResponse(request, response))
-        .then(this.sendResponse);
+      return method(request).then(response => mapResponse(request, response));
     } else if (request.id !== undefined) {
-      return this.sendResponse({
-        jsonrpc: JSONRPC,
-        id: request.id,
-        error: {
-          code: JSONRPCErrorCode.MethodNotFound,
-          message: "Method not found"
-        }
-      });
+      return Promise.resolve(createMethodNotFoundResponse(request.id));
     } else {
-      return Promise.resolve();
+      return Promise.resolve(null);
     }
   }
 }

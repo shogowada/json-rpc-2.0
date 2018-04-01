@@ -1,0 +1,48 @@
+import "mocha";
+import { expect } from "chai";
+import { JSONRPCServer, JSONRPCClient, jsonRPCServer, jsonRPCClient } from ".";
+
+describe("JSONRPCClient and JSONRPCServer", () => {
+  let server: JSONRPCServer;
+  let client: JSONRPCClient;
+
+  let id: number;
+
+  beforeEach(() => {
+    id = 0;
+
+    server = jsonRPCServer();
+    client = jsonRPCClient(
+      () => ++id,
+      request => {
+        return server.receive(request).then(response => {
+          if (response) {
+            client.receive(response);
+          }
+        });
+      }
+    );
+  });
+
+  it("sending a request should resolve the result", () => {
+    beforeEach(() => {
+      server.addMethod("foo", () => "bar");
+
+      return client
+        .request("foo")
+        .then(result => expect(result).to.equal("bar"));
+    });
+  });
+
+  it("sending a notification should send a notification", () => {
+    let received: string;
+
+    beforeEach(() => {
+      server.addMethod("foo", ([text]: any[]) => (received = text));
+
+      client.notify("foo", ["bar"]);
+
+      expect(received).to.equal("bar");
+    });
+  });
+});

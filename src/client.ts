@@ -45,10 +45,10 @@ export class JSONRPCClient {
   }
 
   requestAdvanced(request: JSONRPCRequest): PromiseLike<JSONRPCResponse> {
-    return this.sendRequest(request).then(
-      (): PromiseLike<JSONRPCResponse> =>
-        new Promise(resolve => this.idToResolveMap.set(request.id, resolve))
+    const promise: PromiseLike<JSONRPCResponse> = new Promise(resolve =>
+      this.idToResolveMap.set(request.id!, resolve)
     );
+    return this.sendRequest(request).then(() => promise);
   }
 
   notify(method: string, params?: JSONRPCParams): void {

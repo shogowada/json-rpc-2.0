@@ -6,22 +6,12 @@ import { JSONRPCErrorCode, JSONRPCResponse } from "./models";
 describe("JSONRPCServer", () => {
   let server: JSONRPCServer;
 
-  let lastResponse: JSONRPCResponse | undefined;
-  let resolve: (() => void) | undefined;
-  let reject: (() => void) | undefined;
+  let response: JSONRPCResponse | null;
 
   beforeEach(() => {
-    lastResponse = undefined;
-    resolve = undefined;
-    reject = undefined;
+    response = null;
 
-    server = jsonRPCServer(response => {
-      lastResponse = response;
-      return new Promise((givenResolve, givenReject) => {
-        resolve = givenResolve;
-        reject = givenReject;
-      });
-    });
+    server = jsonRPCServer();
   });
 
   const waitUntil = (predicate: () => boolean): PromiseLike<void> => {
@@ -40,49 +30,52 @@ describe("JSONRPCServer", () => {
     });
 
     describe("receiving a request to the method", () => {
-      let promise: PromiseLike<void>;
-
       beforeEach(() => {
-        promise = server.receive({
-          jsonrpc: JSONRPC,
-          id: 0,
-          method: "echo",
-          params: { text: "foo" }
-        });
-
-        return waitUntil(() => !!resolve);
+        return server
+          .receive({
+            jsonrpc: JSONRPC,
+            id: 0,
+            method: "echo",
+            params: { text: "foo" }
+          })
+          .then(givenResponse => (response = givenResponse));
       });
 
       it("should echo the text", () => {
-        expect(lastResponse).to.deep.equal({
+        expect(response).to.deep.equal({
           jsonrpc: JSONRPC,
           id: 0,
           result: "foo"
         });
       });
+    });
+  });
 
-      describe("and successfully sending a response", () => {
-        beforeEach(() => {
-          resolve!();
-        });
+  describe("responding to a notification", () => {
+    beforeEach(() => {
+      server.addMethod("foo", () => "foo");
 
-        it("should resolve the promise", () => {
-          return promise;
-        });
-      });
+      return server
+        .receive({ jsonrpc: JSONRPC, method: "foo" })
+        .then(givenResponse => (response = givenResponse));
+    });
 
-      describe("but failed to send a response", () => {
-        beforeEach(() => {
-          reject!();
-        });
+    it("should not respond", () => {
+      expect(response).to.be.null;
+    });
+  });
 
-        it("should reject the promise", () => {
-          return promise.then(
-            () => Promise.reject("Expected to fail"),
-            () => undefined
-          );
-        });
-      });
+  describe("error on a notification", () => {
+    beforeEach(() => {
+      server.addMethod("foo", () => Promise.reject("foo"));
+
+      return server
+        .receive({ jsonrpc: JSONRPC, method: "foo" })
+        .then(givenResponse => (response = givenResponse));
+    });
+
+    it("should not respond", () => {
+      expect(response).to.be.null;
     });
   });
 
@@ -90,19 +83,17 @@ describe("JSONRPCServer", () => {
     beforeEach(() => {
       server.addMethodAdvanced("foo", () => Promise.resolve(null));
 
-      const promise = server.receive({
-        jsonrpc: JSONRPC,
-        id: 0,
-        method: "foo"
-      });
-
-      return waitUntil(() => !!resolve)
-        .then(() => resolve!())
-        .then(() => promise);
+      return server
+        .receive({
+          jsonrpc: JSONRPC,
+          id: 0,
+          method: "foo"
+        })
+        .then(givenResponse => (response = givenResponse));
     });
 
     it("should respond error", () => {
-      expect(lastResponse).to.deep.equal({
+      expect(response).to.deep.equal({
         jsonrpc: JSONRPC,
         id: 0,
         error: {
@@ -115,19 +106,17 @@ describe("JSONRPCServer", () => {
 
   describe("receiving a request to an unknown method", () => {
     beforeEach(() => {
-      const promise = server.receive({
-        jsonrpc: JSONRPC,
-        id: 0,
-        method: "foo"
-      });
-
-      return waitUntil(() => !!resolve)
-        .then(() => resolve!())
-        .then(() => promise);
+      return server
+        .receive({
+          jsonrpc: JSONRPC,
+          id: 0,
+          method: "foo"
+        })
+        .then(givenResponse => (response = givenResponse));
     });
 
     it("should respond error", () => {
-      expect(lastResponse).to.deep.equal({
+      expect(response).to.deep.equal({
         jsonrpc: JSONRPC,
         id: 0,
         error: {
