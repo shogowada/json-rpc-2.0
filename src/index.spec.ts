@@ -12,16 +12,13 @@ describe("JSONRPCClient and JSONRPCServer", () => {
     id = 0;
 
     server = new JSONRPCServer();
-    client = new JSONRPCClient(
-      () => ++id,
-      request => {
-        return server.receive(request).then(response => {
-          if (response) {
-            client.receive(response);
-          }
-        });
-      }
-    );
+    client = new JSONRPCClient(request => {
+      return server.receive(request).then(response => {
+        if (response) {
+          client.receive(response);
+        }
+      });
+    }, () => ++id);
   });
 
   it("sending a request should resolve the result", () => {

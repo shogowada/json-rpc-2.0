@@ -6,8 +6,8 @@ import {
   JSONRPCResponse
 } from "./models";
 
-export type CreateID = () => JSONRPCID;
 export type SendRequest = (request: JSONRPCRequest) => PromiseLike<void>;
+export type CreateID = () => JSONRPCID;
 
 type Resolve = (response: JSONRPCResponse) => void;
 
@@ -15,9 +15,19 @@ type IDToDeferredMap = Map<JSONRPCID, Resolve>;
 
 export class JSONRPCClient {
   private idToResolveMap: IDToDeferredMap;
+  private id: number;
 
-  constructor(private createID: CreateID, private sendRequest: SendRequest) {
+  constructor(private sendRequest: SendRequest, private createID?: CreateID) {
     this.idToResolveMap = new Map();
+    this.id = 0;
+  }
+
+  private _createID(): JSONRPCID {
+    if (this.createID) {
+      return this.createID();
+    } else {
+      return ++this.id;
+    }
   }
 
   request(method: string, params?: JSONRPCParams): PromiseLike<any> {
@@ -25,7 +35,7 @@ export class JSONRPCClient {
       jsonrpc: JSONRPC,
       method,
       params,
-      id: this.createID()
+      id: this._createID()
     };
 
     return this.requestAdvanced(request).then(response => {

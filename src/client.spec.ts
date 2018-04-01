@@ -16,16 +16,13 @@ describe("JSONRPCClient", () => {
     resolve = undefined;
     reject = undefined;
 
-    client = new JSONRPCClient(
-      () => ++id,
-      request => {
-        lastRequest = request;
-        return new Promise((givenResolve, givenReject) => {
-          resolve = givenResolve;
-          reject = givenReject;
-        });
-      }
-    );
+    client = new JSONRPCClient(request => {
+      lastRequest = request;
+      return new Promise((givenResolve, givenReject) => {
+        resolve = givenResolve;
+        reject = givenReject;
+      });
+    }, () => ++id);
   });
 
   describe("requesting", () => {
