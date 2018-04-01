@@ -88,6 +88,24 @@ describe("JSONRPCServer", () => {
     });
   });
 
+  describe("responding undefined", () => {
+    beforeEach(() => {
+      server.addMethod("ack", () => undefined);
+
+      return server
+        .receive({ jsonrpc: JSONRPC, id: 0, method: "ack" })
+        .then(givenResponse => (response = givenResponse));
+    });
+
+    it("should response with null result", () => {
+      expect(response).to.deep.equal({
+        jsonrpc: JSONRPC,
+        id: 0,
+        result: null
+      });
+    });
+  });
+
   describe("responding to a notification", () => {
     beforeEach(() => {
       server.addMethod("foo", () => "foo");

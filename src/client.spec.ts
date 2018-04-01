@@ -85,6 +85,22 @@ describe("JSONRPCClient", () => {
         });
       });
 
+      describe("and succeded on server side with falsy but defined result", () => {
+        beforeEach(() => {
+          client.receive({
+            jsonrpc: JSONRPC,
+            id,
+            result: 0
+          });
+
+          return promise;
+        });
+
+        it("should resolve the result", () => {
+          expect(result).to.equal(0);
+        });
+      });
+
       describe("but failed on server side", () => {
         let response: JSONRPCResponse;
 

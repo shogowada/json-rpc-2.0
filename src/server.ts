@@ -92,7 +92,7 @@ const mapResultToJSONRPCResponse = (
     return {
       jsonrpc: JSONRPC,
       id,
-      result
+      result: result === undefined ? null : result
     };
   } else {
     return null;

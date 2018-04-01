@@ -48,9 +48,9 @@ export class JSONRPCClient<ClientParams = void> {
     };
 
     return this.requestAdvanced(request, clientParams).then(response => {
-      if (response.result && !response.error) {
+      if (response.result !== undefined && !response.error) {
         return response.result;
-      } else if (!response.result && response.error) {
+      } else if (response.result === undefined && response.error) {
         return Promise.reject(new Error(response.error.message));
       } else {
         return Promise.reject(new Error("An unexpected error occurred"));
