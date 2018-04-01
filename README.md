@@ -59,8 +59,8 @@ To hook authentication into the API, inject custom params:
 ```javascript
 const server = new JSONRPCServer();
 
-// The method can be a higher-order function (a function that returns a function).
-// In that case, JSONRPCServer will inject a custom parameter to the returned function.
+// If the method is a higher-order function (a function that returns a function),
+// it will pass the custom parameter to the returned function.
 // Use this to inject whatever information that method needs outside the regular JSON-RPC request.
 server.addMethod("echo", ({ text }) => ({ userID }) => `${userID} said ${text}`);
 
@@ -110,6 +110,34 @@ client.request("echo", { text: "Hello, World!" }).then(result => console.log(res
 // Use client.notify to make a JSON-RPC notification call.
 // By definition, JSON-RPC notification does not respond.
 client.notify("log", { message: "Hello, World!" });
+```
+
+#### With authentication
+
+Just like `JSONRPCServer`, you can inject custom params to `JSONRPCClient` too:
+
+```javascript
+const client = new JSONRPCClient(
+  // If it is a higher-order function, it passes the custom params to the returned function.
+  (jsonRPCRequest) => ({ token }) =>
+    fetch("http://localhost/json-rpc", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${token}` // Use the passed token
+      },
+      body: JSON.stringify(jsonRPCRequest)
+    }).then(response => {
+      if (response.status === 200) {
+        // Use client.receive when you received a JSON-RPC response.
+        return response.json().then(jsonRPCResponse => client.receive(jsonRPCResponse));
+      }
+    })
+);
+
+// Pass the custom params as the third argument.
+client.request("echo", { text: "Hello, World!" }, { token: "foo's token" });
+client.notify("log", { message: "Hello, World!" }, { token: "foo's token" });
 ```
 
 ## Build

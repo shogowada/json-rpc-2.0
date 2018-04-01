@@ -6,18 +6,23 @@ import {
   JSONRPCResponse
 } from "./models";
 
-export type SendRequest = (request: JSONRPCRequest) => PromiseLike<void>;
+export type SendRequest<ClientParams> = (
+  request: JSONRPCRequest
+) => PromiseLike<void> | ((clientParams?: ClientParams) => PromiseLike<void>);
 export type CreateID = () => JSONRPCID;
 
 type Resolve = (response: JSONRPCResponse) => void;
 
 type IDToDeferredMap = Map<JSONRPCID, Resolve>;
 
-export class JSONRPCClient {
+export class JSONRPCClient<ClientParams = void> {
   private idToResolveMap: IDToDeferredMap;
   private id: number;
 
-  constructor(private sendRequest: SendRequest, private createID?: CreateID) {
+  constructor(
+    private sendRequest: SendRequest<ClientParams>,
+    private createID?: CreateID
+  ) {
     this.idToResolveMap = new Map();
     this.id = 0;
   }
@@ -30,7 +35,11 @@ export class JSONRPCClient {
     }
   }
 
-  request(method: string, params?: JSONRPCParams): PromiseLike<any> {
+  request(
+    method: string,
+    params?: JSONRPCParams,
+    clientParams?: ClientParams
+  ): PromiseLike<any> {
     const request: JSONRPCRequest = {
       jsonrpc: JSONRPC,
       method,
@@ -38,7 +47,7 @@ export class JSONRPCClient {
       id: this._createID()
     };
 
-    return this.requestAdvanced(request).then(response => {
+    return this.requestAdvanced(request, clientParams).then(response => {
       if (response.result && !response.error) {
         return response.result;
       } else if (!response.result && response.error) {
@@ -49,19 +58,40 @@ export class JSONRPCClient {
     });
   }
 
-  requestAdvanced(request: JSONRPCRequest): PromiseLike<JSONRPCResponse> {
+  requestAdvanced(
+    request: JSONRPCRequest,
+    clientParams?: ClientParams
+  ): PromiseLike<JSONRPCResponse> {
     const promise: PromiseLike<JSONRPCResponse> = new Promise(resolve =>
       this.idToResolveMap.set(request.id!, resolve)
     );
-    return this.sendRequest(request).then(() => promise);
+    return this._sendRequest(request, clientParams).then(() => promise);
   }
 
-  notify(method: string, params?: JSONRPCParams): void {
-    this.sendRequest({
-      jsonrpc: JSONRPC,
-      method,
-      params
-    });
+  notify(
+    method: string,
+    params?: JSONRPCParams,
+    clientParams?: ClientParams
+  ): void {
+    this._sendRequest(
+      {
+        jsonrpc: JSONRPC,
+        method,
+        params
+      },
+      clientParams
+    );
+  }
+
+  private _sendRequest(
+    request: JSONRPCRequest,
+    clientParams: ClientParams | undefined
+  ): PromiseLike<void> {
+    let response = this.sendRequest(request);
+    if (typeof response === "function") {
+      response = response(clientParams);
+    }
+    return response;
   }
 
   receive(response: JSONRPCResponse): void {

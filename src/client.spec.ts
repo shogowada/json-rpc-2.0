@@ -2,11 +2,16 @@ import "mocha";
 import { expect } from "chai";
 import { JSONRPCClient, JSONRPC, JSONRPCResponse, JSONRPCRequest } from ".";
 
+interface ClientParams {
+  token: string;
+}
+
 describe("JSONRPCClient", () => {
-  let client: JSONRPCClient;
+  let client: JSONRPCClient<ClientParams>;
 
   let id: number;
   let lastRequest: JSONRPCRequest | undefined;
+  let lastClientParams: ClientParams | undefined;
   let resolve: (() => void) | undefined;
   let reject: ((error: any) => void) | undefined;
 
@@ -16,13 +21,17 @@ describe("JSONRPCClient", () => {
     resolve = undefined;
     reject = undefined;
 
-    client = new JSONRPCClient(request => {
-      lastRequest = request;
-      return new Promise((givenResolve, givenReject) => {
-        resolve = givenResolve;
-        reject = givenReject;
-      });
-    }, () => ++id);
+    client = new JSONRPCClient(
+      request => clientParams => {
+        lastRequest = request;
+        lastClientParams = clientParams;
+        return new Promise((givenResolve, givenReject) => {
+          resolve = givenResolve;
+          reject = givenReject;
+        });
+      },
+      () => ++id
+    );
   });
 
   describe("requesting", () => {
@@ -162,6 +171,19 @@ describe("JSONRPCClient", () => {
     });
   });
 
+  describe("requesting with client params", () => {
+    let expected: ClientParams;
+    beforeEach(() => {
+      expected = { token: "baz" };
+
+      client.request("foo", undefined, expected);
+    });
+
+    it("should pass the client params to send function", () => {
+      expect(lastClientParams).to.deep.equal(expected);
+    });
+  });
+
   describe("notifying", () => {
     beforeEach(() => {
       client.notify("foo", ["bar"]);
@@ -173,6 +195,19 @@ describe("JSONRPCClient", () => {
         method: "foo",
         params: ["bar"]
       });
+    });
+  });
+
+  describe("notifying with client params", () => {
+    let expected: ClientParams;
+    beforeEach(() => {
+      expected = { token: "baz" };
+
+      client.notify("foo", undefined, expected);
+    });
+
+    it("should pass the client params to send function", () => {
+      expect(lastClientParams).to.deep.equal(expected);
     });
   });
 });
