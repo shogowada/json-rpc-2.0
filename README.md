@@ -1,5 +1,5 @@
 # json-rpc-2.0
-Let your client and server talk over function calls under JSON-RPC 2.0 spec. No external dependencies.
+Let your client and server talk over function calls under JSON-RPC 2.0 spec.
 
 - Protocol agnostic
     - Use over HTTP, WebSocket, TCP, UDP, inter-process, whatever else
