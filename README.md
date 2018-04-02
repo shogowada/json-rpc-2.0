@@ -1,8 +1,9 @@
 # json-rpc-2.0
-JSON-RPC 2.0 client and server lib for JavaScript.
+Let your client and server talk over function calls under JSON-RPC 2.0 spec. No external dependencies.
 
 - Protocol agnostic
     - Use over HTTP, WebSocket, TCP, UDP, inter-process, whatever else
+        - Easy migration from HTTP to WebSocket, for example
 - No external dependencies
     - Keep your package small
 - First-class TypeScript support
