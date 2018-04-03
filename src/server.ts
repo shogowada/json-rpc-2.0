@@ -4,7 +4,8 @@ import {
   JSONRPCParams,
   JSONRPC,
   JSONRPCID,
-  JSONRPCErrorCode
+  JSONRPCErrorCode,
+  createJSONRPCErrorResponse
 } from "./models";
 
 export type SimpleJSONRPCMethod = (params?: Partial<JSONRPCParams>) => any;
@@ -21,14 +22,12 @@ type NameToMethodDictionary<ServerParams> = {
 
 const DefaultErrorCode = 0;
 
-const createMethodNotFoundResponse = (id: JSONRPCID): JSONRPCResponse => ({
-  jsonrpc: JSONRPC,
-  id,
-  error: {
-    code: JSONRPCErrorCode.MethodNotFound,
-    message: "Method not found"
-  }
-});
+const createMethodNotFoundResponse = (id: JSONRPCID): JSONRPCResponse =>
+  createJSONRPCErrorResponse(
+    id,
+    JSONRPCErrorCode.MethodNotFound,
+    "Method not found"
+  );
 
 export class JSONRPCServer<ServerParams = void> {
   private nameToMethodDictionary: NameToMethodDictionary<ServerParams>;
@@ -104,14 +103,11 @@ const mapErrorToJSONRPCResponse = (
   error: any
 ): JSONRPCResponse | null => {
   if (id !== undefined) {
-    return {
-      jsonrpc: JSONRPC,
+    return createJSONRPCErrorResponse(
       id,
-      error: {
-        code: DefaultErrorCode,
-        message: error.message || "An unexpected error occurred"
-      }
-    };
+      DefaultErrorCode,
+      error.message || "An unexpected error occurred"
+    );
   } else {
     return null;
   }
@@ -124,14 +120,11 @@ const mapResponse = (
   if (response) {
     return response;
   } else if (request.id !== undefined) {
-    return {
-      jsonrpc: JSONRPC,
-      id: request.id,
-      error: {
-        code: JSONRPCErrorCode.InternalError,
-        message: "Internal error"
-      }
-    };
+    return createJSONRPCErrorResponse(
+      request.id,
+      JSONRPCErrorCode.InternalError,
+      "Internal error"
+    );
   } else {
     return null;
   }

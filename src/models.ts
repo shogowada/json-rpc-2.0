@@ -31,3 +31,18 @@ export const enum JSONRPCErrorCode {
   InvalidParams = -32602,
   InternalError = -32603
 }
+
+export const createJSONRPCErrorResponse = (
+  id: JSONRPCID,
+  code: number,
+  message: string
+): JSONRPCResponse => {
+  return {
+    jsonrpc: JSONRPC,
+    id,
+    error: {
+      code,
+      message
+    }
+  };
+};

@@ -6,6 +6,7 @@ Let your client and server talk over function calls under JSON-RPC 2.0 spec.
         - Easy migration from HTTP to WebSocket, for example
 - No external dependencies
     - Keep your package small
+    - Stay away from dependency hell
 - First-class TypeScript support
     - Written in TypeScript
 
@@ -86,6 +87,8 @@ const getUserID = (req) => // Do whatever to get user ID out of the request
 ### Client
 
 ```javascript
+import { JSONRPCClient, createJSONRPCErrorResponse } from "json-rpc-2.0";
+
 // JSONRPCClient needs to know how to send a JSON-RPC request.
 // Tell it by passing a function to its constructor. The function must take a JSON-RPC request and send it.
 const client = new JSONRPCClient(
@@ -100,6 +103,8 @@ const client = new JSONRPCClient(
       if (response.status === 200) {
         // Use client.receive when you received a JSON-RPC response.
         return response.json().then(jsonRPCResponse => client.receive(jsonRPCResponse));
+      } else if (jsonRPCRequest.id !== undefined) {
+        client.receive(createJSONRPCErrorResponse(jsonRPCRequest.id, 0, response.statusText));
       }
     })
 );
@@ -129,10 +134,7 @@ const client = new JSONRPCClient(
       },
       body: JSON.stringify(jsonRPCRequest)
     }).then(response => {
-      if (response.status === 200) {
-        // Use client.receive when you received a JSON-RPC response.
-        return response.json().then(jsonRPCResponse => client.receive(jsonRPCResponse));
-      }
+      // ...
     })
 );
 
