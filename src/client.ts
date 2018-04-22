@@ -80,7 +80,7 @@ export class JSONRPCClient<ClientParams = void> {
         params
       },
       clientParams
-    );
+    ).then(undefined, () => undefined);
   }
 
   private _sendRequest(
