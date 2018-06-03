@@ -28,6 +28,10 @@ export class JSONRPCServerAndClient<ServerParams = void, ClientParams = void> {
     this.client.notify(method, params, clientParams);
   }
 
+  rejectAllPendingRequests(message: string): void {
+    this.client.rejectAllPendingRequests(message);
+  }
+
   async receiveAndSend(
     requestOrResponse: object,
     serverParams?: ServerParams,

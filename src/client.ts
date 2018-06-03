@@ -1,4 +1,5 @@
 import {
+  createJSONRPCErrorResponse,
   JSONRPC,
   JSONRPCID,
   JSONRPCParams,
@@ -92,6 +93,13 @@ export class JSONRPCClient<ClientParams = void> {
       promiseOrFunction = promiseOrFunction(clientParams);
     }
     return promiseOrFunction;
+  }
+
+  rejectAllPendingRequests(message: string): void {
+    this.idToResolveMap.forEach((resolve: Resolve, id: string) =>
+      resolve(createJSONRPCErrorResponse(id, 0, message))
+    );
+    this.idToResolveMap.clear();
   }
 
   receive(response: JSONRPCResponse): boolean {

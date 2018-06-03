@@ -143,6 +143,53 @@ client.request("echo", { text: "Hello, World!" }, { token: "foo's token" });
 client.notify("log", { message: "Hello, World!" }, { token: "foo's token" });
 ```
 
+#### Error handling
+
+To respond an error, reject with an `Error`. On the client side, the promise will be rejected with an `Error` object with the same message.
+
+```javascript
+server.addMethod("fail", () => Promise.reject(new Error("This is an error message.")));
+
+client.request("fail").then(
+  () => console.log("This does not get called"),
+  error => console.error(error.message) // Outputs "This is an error message."
+);
+```
+
+#### Server and client
+
+For bi-directional JSON-RPC, use `JSONRPCServerAndClient`.
+
+```javascript
+const webSocket = new WebSocket("ws://localhost");
+
+const serverAndClient = new JSONRPCServerAndClient(
+  new JSONRPCServer(),
+  new JSONRPCClient(request => {
+    try {
+      webSocket.send(JSON.stringify(request))
+      return Promise.resolve();
+    } catch(error) {
+      return Promise.reject(error);
+    }
+  })
+);
+
+webSocket.onmessage = (event) => {
+  serverAndClient.receiveAndSend(event.data.toString());
+}
+
+// On close, make sure to reject all the pending requests to prevent hanging.
+webSocket.onclose = (event) => {
+  serverAndClient.rejectAllPendingRequests(`Connection is closed (${event.reason}).`);
+}
+
+serverAndClient.addMethod("echo", ({ text }) => text);
+
+serverAndClient.request("add", { x: 1, y: 2 })
+  .then(result => console.log(`1 + 2 = ${result}`));
+```
+
 ## Build
 
 `npm run build`

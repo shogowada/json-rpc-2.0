@@ -168,6 +168,38 @@ describe("JSONRPCClient", () => {
           });
         });
       });
+
+      describe("but I reject all pending requests", () => {
+        let message: string;
+
+        beforeEach(() => {
+          message = "Connection is closed.";
+
+          client.rejectAllPendingRequests(message);
+
+          return promise;
+        });
+
+        it("should reject the request", () => {
+          expect(error.message).to.equal(message);
+        });
+
+        describe("receiving a response", () => {
+          beforeEach(() => {
+            client.receive({
+              jsonrpc: JSONRPC,
+              id,
+              result: "foo"
+            });
+
+            return promise;
+          });
+
+          it("should not resolve the promise again", () => {
+            expect(result).to.be.undefined;
+          });
+        });
+      });
     });
 
     describe("failed on client side", () => {
