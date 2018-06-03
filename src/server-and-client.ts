@@ -51,7 +51,7 @@ export class JSONRPCServerAndClient<ServerParams = void, ClientParams = void> {
         serverParams
       );
       if (response) {
-        return this.client.sendToServer(response, clientParams);
+        return this.client.send(response, clientParams);
       }
     }
   }

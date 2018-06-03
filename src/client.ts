@@ -21,7 +21,7 @@ export class JSONRPCClient<ClientParams = void> {
   private id: number;
 
   constructor(
-    private _sendToServer: SendRequest<ClientParams>,
+    private _send: SendRequest<ClientParams>,
     private createID?: CreateID
   ) {
     this.idToResolveMap = new Map();
@@ -66,7 +66,7 @@ export class JSONRPCClient<ClientParams = void> {
     const promise: PromiseLike<JSONRPCResponse> = new Promise(resolve =>
       this.idToResolveMap.set(request.id!, resolve)
     );
-    return this.sendToServer(request, clientParams).then(() => promise);
+    return this.send(request, clientParams).then(() => promise);
   }
 
   notify(
@@ -74,7 +74,7 @@ export class JSONRPCClient<ClientParams = void> {
     params?: JSONRPCParams,
     clientParams?: ClientParams
   ): void {
-    this.sendToServer(
+    this.send(
       {
         jsonrpc: JSONRPC,
         method,
@@ -84,11 +84,11 @@ export class JSONRPCClient<ClientParams = void> {
     ).then(undefined, () => undefined);
   }
 
-  sendToServer(
+  send(
     payload: any,
     clientParams: ClientParams | undefined
   ): PromiseLike<void> {
-    let promiseOrFunction = this._sendToServer(payload);
+    let promiseOrFunction = this._send(payload);
     if (typeof promiseOrFunction === "function") {
       promiseOrFunction = promiseOrFunction(clientParams);
     }
