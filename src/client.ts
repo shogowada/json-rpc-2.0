@@ -1,4 +1,5 @@
 import {
+  createJSONRPCErrorResponse,
   JSONRPC,
   JSONRPCID,
   JSONRPCParams,
@@ -7,7 +8,7 @@ import {
 } from "./models";
 
 export type SendRequest<ClientParams> = (
-  request: JSONRPCRequest
+  payload: any
 ) => PromiseLike<void> | ((clientParams?: ClientParams) => PromiseLike<void>);
 export type CreateID = () => JSONRPCID;
 
@@ -20,7 +21,7 @@ export class JSONRPCClient<ClientParams = void> {
   private id: number;
 
   constructor(
-    private sendRequest: SendRequest<ClientParams>,
+    private _send: SendRequest<ClientParams>,
     private createID?: CreateID
   ) {
     this.idToResolveMap = new Map();
@@ -65,7 +66,7 @@ export class JSONRPCClient<ClientParams = void> {
     const promise: PromiseLike<JSONRPCResponse> = new Promise(resolve =>
       this.idToResolveMap.set(request.id!, resolve)
     );
-    return this._sendRequest(request, clientParams).then(() => promise);
+    return this.send(request, clientParams).then(() => promise);
   }
 
   notify(
@@ -73,7 +74,7 @@ export class JSONRPCClient<ClientParams = void> {
     params?: JSONRPCParams,
     clientParams?: ClientParams
   ): void {
-    this._sendRequest(
+    this.send(
       {
         jsonrpc: JSONRPC,
         method,
@@ -83,20 +84,28 @@ export class JSONRPCClient<ClientParams = void> {
     ).then(undefined, () => undefined);
   }
 
-  private _sendRequest(
-    request: JSONRPCRequest,
+  send(
+    payload: any,
     clientParams: ClientParams | undefined
   ): PromiseLike<void> {
-    let response = this.sendRequest(request);
-    if (typeof response === "function") {
-      response = response(clientParams);
+    let promiseOrFunction = this._send(payload);
+    if (typeof promiseOrFunction === "function") {
+      promiseOrFunction = promiseOrFunction(clientParams);
     }
-    return response;
+    return promiseOrFunction;
+  }
+
+  rejectAllPendingRequests(message: string): void {
+    this.idToResolveMap.forEach((resolve: Resolve, id: string) =>
+      resolve(createJSONRPCErrorResponse(id, 0, message))
+    );
+    this.idToResolveMap.clear();
   }
 
   receive(response: JSONRPCResponse): void {
     const resolve = this.idToResolveMap.get(response.id);
     if (resolve) {
+      this.idToResolveMap.delete(response.id);
       resolve(response);
     }
   }
