@@ -143,20 +143,7 @@ client.request("echo", { text: "Hello, World!" }, { token: "foo's token" });
 client.notify("log", { message: "Hello, World!" }, { token: "foo's token" });
 ```
 
-#### Error handling
-
-To respond an error, reject with an `Error`. On the client side, the promise will be rejected with an `Error` object with the same message.
-
-```javascript
-server.addMethod("fail", () => Promise.reject(new Error("This is an error message.")));
-
-client.request("fail").then(
-  () => console.log("This does not get called"),
-  error => console.error(error.message) // Outputs "This is an error message."
-);
-```
-
-#### Server and client
+### Bi-directional JSON-RPC
 
 For bi-directional JSON-RPC, use `JSONRPCServerAndClient`.
 
@@ -188,6 +175,19 @@ serverAndClient.addMethod("echo", ({ text }) => text);
 
 serverAndClient.request("add", { x: 1, y: 2 })
   .then(result => console.log(`1 + 2 = ${result}`));
+```
+
+### Error handling
+
+To respond an error, reject with an `Error`. On the client side, the promise will be rejected with an `Error` object with the same message.
+
+```javascript
+server.addMethod("fail", () => Promise.reject(new Error("This is an error message.")));
+
+client.request("fail").then(
+  () => console.log("This does not get called"),
+  error => console.error(error.message) // Outputs "This is an error message."
+);
 ```
 
 ## Build
