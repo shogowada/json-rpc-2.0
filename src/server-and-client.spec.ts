@@ -52,4 +52,34 @@ describe("JSONRPCServerAndClient", () => {
       expect(result).to.equal("bar");
     });
   });
+
+  describe("having a pending request", () => {
+    let promise: PromiseLike<void>;
+    let resolve: () => void;
+    beforeEach(() => {
+      serverAndClient2.addMethod("hang", () => {
+        return new Promise(givenResolve => (resolve = givenResolve));
+      });
+
+      promise = serverAndClient1.request("hang");
+    });
+
+    describe("rejecting all pending requests", () => {
+      let message: string;
+      beforeEach(() => {
+        message = "Connection is closed.";
+
+        serverAndClient1.rejectAllPendingRequests(message);
+
+        resolve();
+      });
+
+      it("should reject the pending request", () => {
+        return promise.then(
+          () => Promise.reject(new Error("Expected to fail")),
+          error => expect(error.message).to.equal(message)
+        );
+      });
+    });
+  });
 });

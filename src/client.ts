@@ -102,14 +102,11 @@ export class JSONRPCClient<ClientParams = void> {
     this.idToResolveMap.clear();
   }
 
-  receive(response: JSONRPCResponse): boolean {
+  receive(response: JSONRPCResponse): void {
     const resolve = this.idToResolveMap.get(response.id);
     if (resolve) {
       this.idToResolveMap.delete(response.id);
       resolve(response);
-      return true;
-    } else {
-      return false;
     }
   }
 }

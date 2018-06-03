@@ -18,6 +18,18 @@ export interface JSONRPCResponse {
   id: JSONRPCID;
 }
 
+export const isJSONRPCRequest = (payload: any): payload is JSONRPCRequest => {
+  return (
+    payload.method !== undefined &&
+    payload.result === undefined &&
+    payload.error === undefined
+  );
+};
+
+export const isJSONRPCResponse = (payload: any): payload is JSONRPCResponse => {
+  return !isJSONRPCRequest(payload);
+};
+
 export interface JSONRPCError {
   code: number;
   message: string;

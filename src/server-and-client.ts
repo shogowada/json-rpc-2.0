@@ -1,6 +1,12 @@
 import { JSONRPCServer, SimpleJSONRPCMethod } from "./server";
 import { JSONRPCClient } from "./client";
-import { JSONRPCParams, JSONRPCRequest, JSONRPCResponse } from "./models";
+import {
+  isJSONRPCRequest,
+  isJSONRPCResponse,
+  JSONRPCParams,
+  JSONRPCRequest,
+  JSONRPCResponse
+} from "./models";
 
 export class JSONRPCServerAndClient<ServerParams = void, ClientParams = void> {
   constructor(
@@ -33,13 +39,15 @@ export class JSONRPCServerAndClient<ServerParams = void, ClientParams = void> {
   }
 
   async receiveAndSend(
-    requestOrResponse: object,
+    payload: any,
     serverParams?: ServerParams,
     clientParams?: ClientParams
   ): Promise<void> {
-    if (!this.client.receive(requestOrResponse as JSONRPCResponse)) {
+    if (isJSONRPCResponse(payload)) {
+      this.client.receive(payload);
+    } else if (isJSONRPCRequest(payload)) {
       const response: JSONRPCResponse | null = await this.server.receive(
-        requestOrResponse as JSONRPCRequest,
+        payload,
         serverParams
       );
       if (response) {
