@@ -4,14 +4,13 @@ import {
   isJSONRPCRequest,
   isJSONRPCResponse,
   JSONRPCParams,
-  JSONRPCRequest,
   JSONRPCResponse
 } from "./models";
 
 export class JSONRPCServerAndClient<ServerParams = void, ClientParams = void> {
   constructor(
-    private server: JSONRPCServer<ServerParams>,
-    private client: JSONRPCClient<ClientParams>
+    public server: JSONRPCServer<ServerParams>,
+    public client: JSONRPCClient<ClientParams>
   ) {}
 
   addMethod(name: string, method: SimpleJSONRPCMethod): void {
