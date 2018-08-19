@@ -73,8 +73,8 @@ export class JSONRPCClient<ClientParams = void> {
         this.receive(
           createJSONRPCErrorResponse(
             request.id!,
-            JSONRPCErrorCode.InternalError,
-            (error && error.message) || "Internal Error"
+            0,
+            (error && error.message) || "Failed to send a request"
           )
         );
         return promise;

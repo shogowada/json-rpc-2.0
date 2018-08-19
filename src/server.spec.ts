@@ -1,4 +1,4 @@
-import "mocha";
+import { describe, beforeEach, it } from "mocha";
 import { expect } from "chai";
 import { JSONRPCServer, JSONRPC } from ".";
 import { JSONRPCErrorCode, JSONRPCResponse } from "./models";
@@ -102,6 +102,29 @@ describe("JSONRPCServer", () => {
         jsonrpc: JSONRPC,
         id: 0,
         result: null
+      });
+    });
+  });
+
+  describe("throwing", () => {
+    beforeEach(() => {
+      server.addMethod("throw", () => {
+        throw new Error("This is a test");
+      });
+
+      return server
+        .receive({ jsonrpc: JSONRPC, id: 0, method: "throw" })
+        .then(givenResponse => (response = givenResponse));
+    });
+
+    it("should respond error", () => {
+      expect(response).to.deep.equal({
+        jsonrpc: JSONRPC,
+        id: 0,
+        error: {
+          code: 0,
+          message: "This is a test"
+        }
       });
     });
   });

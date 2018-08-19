@@ -226,7 +226,7 @@ describe("JSONRPCClient", () => {
       });
 
       it("should reject the promise", () => {
-        expect(error.message).to.equal("Internal Error");
+        expect(error.message).to.equal("Failed to send a request");
       });
     });
 
@@ -238,7 +238,7 @@ describe("JSONRPCClient", () => {
       });
 
       it("should reject the promise", () => {
-        expect(error.message).to.equal("Internal Error");
+        expect(error.message).to.equal("Failed to send a request");
       });
     });
   });
