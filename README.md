@@ -104,7 +104,7 @@ const client = new JSONRPCClient(
         // Use client.receive when you received a JSON-RPC response.
         return response.json().then(jsonRPCResponse => client.receive(jsonRPCResponse));
       } else if (jsonRPCRequest.id !== undefined) {
-        client.receive(createJSONRPCErrorResponse(jsonRPCRequest.id, 0, response.statusText));
+        return Promise.reject(new Error(response.statusText));
       }
     })
 );
