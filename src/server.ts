@@ -93,7 +93,10 @@ export class JSONRPCServer<ServerParams = void> {
       if (typeof response === "function") {
         response = response(serverParams);
       }
-      return response;
+      return response.then(undefined, error => {
+        console.warn(error);
+        return mapErrorToJSONRPCResponse(request.id, error);
+      });
     } catch (error) {
       console.warn(error);
       return Promise.resolve(mapErrorToJSONRPCResponse(request.id, error));

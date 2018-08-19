@@ -109,7 +109,7 @@ describe("JSONRPCServer", () => {
   describe("throwing", () => {
     beforeEach(() => {
       server.addMethod("throw", () => {
-        throw new Error("This is a test");
+        throw new Error("Test throwing");
       });
 
       return server
@@ -123,7 +123,30 @@ describe("JSONRPCServer", () => {
         id: 0,
         error: {
           code: 0,
-          message: "This is a test"
+          message: "Test throwing"
+        }
+      });
+    });
+  });
+
+  describe("rejecting", () => {
+    beforeEach(() => {
+      server.addMethodAdvanced("reject", () =>
+        Promise.reject(new Error("Test rejecting"))
+      );
+
+      return server
+        .receive({ jsonrpc: JSONRPC, id: 0, method: "reject" })
+        .then(givenResponse => (response = givenResponse));
+    });
+
+    it("should respond error", () => {
+      expect(response).to.deep.equal({
+        jsonrpc: JSONRPC,
+        id: 0,
+        error: {
+          code: 0,
+          message: "Test rejecting"
         }
       });
     });
