@@ -1,4 +1,4 @@
-import "mocha";
+import { describe, beforeEach, it } from "mocha";
 import { expect } from "chai";
 import { JSONRPCClient, JSONRPC, JSONRPCResponse, JSONRPCRequest } from ".";
 
@@ -214,7 +214,7 @@ describe("JSONRPCClient", () => {
       });
 
       it("should reject the promise", () => {
-        expect(error).to.equal(expected);
+        expect(error.message).to.equal(expected.message);
       });
     });
   });
