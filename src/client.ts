@@ -1,6 +1,7 @@
 import {
   createJSONRPCErrorResponse,
   JSONRPC,
+  JSONRPCErrorCode,
   JSONRPCID,
   JSONRPCParams,
   JSONRPCRequest,
@@ -66,7 +67,19 @@ export class JSONRPCClient<ClientParams = void> {
     const promise: PromiseLike<JSONRPCResponse> = new Promise(resolve =>
       this.idToResolveMap.set(request.id!, resolve)
     );
-    return this.send(request, clientParams).then(() => promise);
+    return this.send(request, clientParams).then(
+      () => promise,
+      error => {
+        this.receive(
+          createJSONRPCErrorResponse(
+            request.id!,
+            0,
+            (error && error.message) || "Failed to send a request"
+          )
+        );
+        return promise;
+      }
+    );
   }
 
   notify(

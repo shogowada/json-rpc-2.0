@@ -70,15 +70,42 @@ export class JSONRPCServer<ServerParams = void> {
   ): JSONRPCResponsePromise {
     const method = this.nameToMethodDictionary[request.method];
     if (method) {
-      let response = method(request);
-      if (typeof response === "function") {
-        response = response(serverParams);
-      }
+      const response: JSONRPCResponsePromise = this.callMethod(
+        method,
+        request,
+        serverParams
+      );
       return response.then(response => mapResponse(request, response));
     } else if (request.id !== undefined) {
       return Promise.resolve(createMethodNotFoundResponse(request.id));
     } else {
       return Promise.resolve(null);
+    }
+  }
+
+  private callMethod(
+    method: JSONRPCMethod<ServerParams>,
+    request: JSONRPCRequest,
+    serverParams: ServerParams | undefined
+  ): JSONRPCResponsePromise {
+    const onError = (error: any): JSONRPCResponsePromise => {
+      console.warn(
+        `An unexpected error occurred while executing "${
+          request.method
+        }" JSON-RPC method:`,
+        error
+      );
+      return Promise.resolve(mapErrorToJSONRPCResponse(request.id, error));
+    };
+
+    try {
+      let response = method(request);
+      if (typeof response === "function") {
+        response = response(serverParams);
+      }
+      return response.then(undefined, onError);
+    } catch (error) {
+      return onError(error);
     }
   }
 }
@@ -106,7 +133,7 @@ const mapErrorToJSONRPCResponse = (
     return createJSONRPCErrorResponse(
       id,
       DefaultErrorCode,
-      error.message || "An unexpected error occurred"
+      (error && error.message) || "An unexpected error occurred"
     );
   } else {
     return null;
