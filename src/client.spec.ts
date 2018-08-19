@@ -217,6 +217,30 @@ describe("JSONRPCClient", () => {
         expect(error.message).to.equal(expected.message);
       });
     });
+
+    describe("failed on client side with no error object", () => {
+      beforeEach(() => {
+        reject!(undefined);
+
+        return promise;
+      });
+
+      it("should reject the promise", () => {
+        expect(error.message).to.equal("Internal Error");
+      });
+    });
+
+    describe("failed on client side with an error object without message", () => {
+      beforeEach(() => {
+        reject!({});
+
+        return promise;
+      });
+
+      it("should reject the promise", () => {
+        expect(error.message).to.equal("Internal Error");
+      });
+    });
   });
 
   describe("requesting with client params", () => {

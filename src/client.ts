@@ -74,7 +74,7 @@ export class JSONRPCClient<ClientParams = void> {
           createJSONRPCErrorResponse(
             request.id!,
             JSONRPCErrorCode.InternalError,
-            error && error.message ? error.message : "Internal Error"
+            (error && error.message) || "Internal Error"
           )
         );
         return promise;
