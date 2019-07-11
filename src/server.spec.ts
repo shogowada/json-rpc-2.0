@@ -168,7 +168,7 @@ describe("JSONRPCServer", () => {
 
   describe("error on a notification", () => {
     beforeEach(() => {
-      server.addMethod("foo", () => Promise.reject("foo"));
+      server.addMethod("foo", () => Promise.reject(new Error("foo")));
 
       return server
         .receive({ jsonrpc: JSONRPC, method: "foo" })
