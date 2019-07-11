@@ -52,7 +52,13 @@ export class JSONRPCServer<ServerParams = void> {
       }
       return Promise.resolve(response).then(
         (result: any) => mapResultToJSONRPCResponse(request.id, result),
-        (error: any) => mapErrorToJSONRPCResponse(request.id, error)
+        (error: any) => {
+          console.warn(
+            `JSON-RPC method ${request.method} responded an error`,
+            error
+          );
+          return mapErrorToJSONRPCResponse(request.id, error);
+        }
       );
     };
   }
