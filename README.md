@@ -163,7 +163,7 @@ const serverAndClient = new JSONRPCServerAndClient(
 );
 
 webSocket.onmessage = (event) => {
-  serverAndClient.receiveAndSend(event.data.toString());
+  serverAndClient.receiveAndSend(JSON.parse(event.data.toString()));
 }
 
 // On close, make sure to reject all the pending requests to prevent hanging.
