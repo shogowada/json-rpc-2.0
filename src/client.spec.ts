@@ -85,7 +85,7 @@ describe("JSONRPCClient", () => {
         });
       });
 
-      describe("and succeded on server side with falsy but defined result", () => {
+      describe("and succeeded on server side with falsy but defined result", () => {
         beforeEach(() => {
           client.receive({
             jsonrpc: JSONRPC,

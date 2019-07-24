@@ -20,6 +20,7 @@ export interface JSONRPCResponse {
 
 export const isJSONRPCRequest = (payload: any): payload is JSONRPCRequest => {
   return (
+    payload.jsonrpc === JSONRPC &&
     payload.method !== undefined &&
     payload.result === undefined &&
     payload.error === undefined
@@ -27,7 +28,11 @@ export const isJSONRPCRequest = (payload: any): payload is JSONRPCRequest => {
 };
 
 export const isJSONRPCResponse = (payload: any): payload is JSONRPCResponse => {
-  return !isJSONRPCRequest(payload);
+  return (
+    payload.jsonrpc === JSONRPC &&
+    payload.id !== undefined &&
+    (payload.result !== undefined || payload.error !== undefined)
+  );
 };
 
 export interface JSONRPCError {

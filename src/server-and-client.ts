@@ -52,6 +52,10 @@ export class JSONRPCServerAndClient<ServerParams = void, ClientParams = void> {
       if (response) {
         return this.client.send(response, clientParams);
       }
+    } else {
+      const message = "Received an invalid JSON-RPC message";
+      console.warn(message, payload);
+      return Promise.reject(new Error(message));
     }
   }
 }

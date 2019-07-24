@@ -227,4 +227,19 @@ describe("JSONRPCServer", () => {
       });
     });
   });
+
+  describe("receiving an invalid request", () => {
+    let promise: PromiseLike<any>;
+
+    beforeEach(() => {
+      promise = server.receive({} as any);
+    });
+
+    it("should throw", () => {
+      return promise.then(
+        () => Promise.reject(new Error("Expected to fail")),
+        () => undefined
+      );
+    });
+  });
 });

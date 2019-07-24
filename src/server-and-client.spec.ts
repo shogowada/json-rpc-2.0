@@ -1,4 +1,4 @@
-import "mocha";
+import { describe, beforeEach, it } from "mocha";
 import { expect } from "chai";
 import { JSONRPCServerAndClient, JSONRPCServer } from ".";
 import { JSONRPCClient } from "./client";
@@ -42,7 +42,7 @@ describe("JSONRPCServerAndClient", () => {
     });
   });
 
-  describe("requseting from server 2", () => {
+  describe("requesting from server 2", () => {
     let result: string;
     beforeEach(async () => {
       result = await serverAndClient2.request("echo1", { message: "bar" });
@@ -50,6 +50,21 @@ describe("JSONRPCServerAndClient", () => {
 
     it("should request to server 1", () => {
       expect(result).to.equal("bar");
+    });
+  });
+
+  describe("receiving invalid JSON-RPC message", () => {
+    let promise: PromiseLike<void>;
+
+    beforeEach(() => {
+      promise = serverAndClient1.receiveAndSend({});
+    });
+
+    it("should fail", () => {
+      return promise.then(
+        () => Promise.reject(new Error("Expected to fail")),
+        () => undefined
+      );
     });
   });
 

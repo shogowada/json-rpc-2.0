@@ -5,7 +5,8 @@ import {
   JSONRPC,
   JSONRPCID,
   JSONRPCErrorCode,
-  createJSONRPCErrorResponse
+  createJSONRPCErrorResponse,
+  isJSONRPCRequest
 } from "./models";
 
 export type SimpleJSONRPCMethod = (params?: Partial<JSONRPCParams>) => any;
@@ -75,7 +76,12 @@ export class JSONRPCServer<ServerParams = void> {
     serverParams?: ServerParams
   ): JSONRPCResponsePromise {
     const method = this.nameToMethodDictionary[request.method];
-    if (method) {
+
+    if (!isJSONRPCRequest(request)) {
+      const message = "Received an invalid JSON-RPC request";
+      console.warn(message, request);
+      return Promise.reject(new Error(message));
+    } else if (method) {
       const response: JSONRPCResponsePromise = this.callMethod(
         method,
         request,
