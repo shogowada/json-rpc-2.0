@@ -41,7 +41,7 @@ export interface JSONRPCError {
   data?: any;
 }
 
-export const enum JSONRPCErrorCode {
+export enum JSONRPCErrorCode {
   ParseError = -32700,
   InvalidRequest = -32600,
   MethodNotFound = -32601,
