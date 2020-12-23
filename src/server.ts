@@ -144,7 +144,7 @@ const mapErrorToJSONRPCResponse = (
   if (id !== undefined) {
     return createJSONRPCErrorResponse(
       id,
-      DefaultErrorCode,
+      (error && error.json_rpc_code) || DefaultErrorCode,
       (error && error.message) || "An unexpected error occurred"
     );
   } else {

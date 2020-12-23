@@ -54,6 +54,18 @@ app.post("/json-rpc", (req, res) => {
 app.listen(80);
 ```
 
+#### With custom error code
+By default the error code is 0. To responde with a custom error code, decorare the error with the `json_rpc_code` property:
+
+```javascript
+// This method will return {jsonrpc: "2.0", id: 'id', error: { code: -32605, message: "Params Invalid"}}
+server.addMethod("error", ({ message }) => {
+  const error = new Error('Params Invalid')
+  error.json_rpc_code = -32602;
+  throw error;
+});
+```
+
 #### With authentication
 
 To hook authentication into the API, inject custom params:

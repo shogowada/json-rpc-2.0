@@ -129,6 +129,31 @@ describe("JSONRPCServer", () => {
     });
   });
 
+  describe("throwing_custom_error", () => {
+    beforeEach(() => {
+      server.addMethod("throw", () => {
+        const error: any = new Error("Invalid Params");
+        error.json_rpc_code = -32605;
+        throw error;
+      });
+
+      return server
+        .receive({ jsonrpc: JSONRPC, id: 0, method: "throw" })
+        .then(givenResponse => (response = givenResponse));
+    });
+
+    it("should respond custom error", () => {
+      expect(response).to.deep.equal({
+        jsonrpc: JSONRPC,
+        id: 0,
+        error: {
+          code: -32605,
+          message: "Invalid Params"
+        }
+      });
+    });
+  });
+
   describe("rejecting", () => {
     beforeEach(() => {
       server.addMethodAdvanced("reject", () =>
