@@ -1,14 +1,15 @@
 # json-rpc-2.0
+
 Let your client and server talk over function calls under [JSON-RPC 2.0 spec](https://www.jsonrpc.org/specification).
 
 - Protocol agnostic
-    - Use over HTTP, WebSocket, TCP, UDP, inter-process, whatever else
-        - Easy migration from HTTP to WebSocket, for example
+  - Use over HTTP, WebSocket, TCP, UDP, inter-process, whatever else
+    - Easy migration from HTTP to WebSocket, for example
 - No external dependencies
-    - Keep your package small
-    - Stay away from dependency hell
+  - Keep your package small
+  - Stay away from dependency hell
 - First-class TypeScript support
-    - Written in TypeScript
+  - Written in TypeScript
 
 ## Install
 
@@ -40,7 +41,7 @@ app.use(bodyParser.json());
 app.post("/json-rpc", (req, res) => {
   const jsonRPCRequest = req.body;
   // server.receive takes a JSON-RPC request and returns a promise of a JSON-RPC response.
-  server.receive(jsonRPCRequest).then(jsonRPCResponse => {
+  server.receive(jsonRPCRequest).then((jsonRPCResponse) => {
     if (jsonRPCResponse) {
       res.json(jsonRPCResponse);
     } else {
@@ -64,7 +65,9 @@ const server = new JSONRPCServer();
 // If the method is a higher-order function (a function that returns a function),
 // it will pass the custom parameter to the returned function.
 // Use this to inject whatever information that method needs outside the regular JSON-RPC request.
-server.addMethod("echo", ({ text }) => ({ userID }) => `${userID} said ${text}`);
+server.addMethod("echo", ({ text }) => ({ userID }) =>
+  `${userID} said ${text}`
+);
 
 app.post("/json-rpc", (req, res) => {
   const jsonRPCRequest = req.body;
@@ -72,7 +75,7 @@ app.post("/json-rpc", (req, res) => {
 
   // server.receive takes an optional second parameter.
   // The parameter will be injected to the JSON-RPC method if it was a higher-order function.
-  server.receive(jsonRPCRequest, { userID }).then(jsonRPCResponse => {
+  server.receive(jsonRPCRequest, { userID }).then((jsonRPCResponse) => {
     if (jsonRPCResponse) {
       res.json(jsonRPCResponse);
     } else {
@@ -81,37 +84,42 @@ app.post("/json-rpc", (req, res) => {
   });
 });
 
-const getUserID = (req) => // Do whatever to get user ID out of the request
+const getUserID = (req) => {
+  // Do whatever to get user ID out of the request
+};
 ```
 
 ### Client
 
 ```javascript
-import { JSONRPCClient, createJSONRPCErrorResponse } from "json-rpc-2.0";
+import { JSONRPCClient } from "json-rpc-2.0";
 
 // JSONRPCClient needs to know how to send a JSON-RPC request.
 // Tell it by passing a function to its constructor. The function must take a JSON-RPC request and send it.
-const client = new JSONRPCClient(
-  (jsonRPCRequest) =>
-    fetch("http://localhost/json-rpc", {
-      method: "POST",
-      headers: {
-        "content-type": "application/json"
-      },
-      body: JSON.stringify(jsonRPCRequest)
-    }).then(response => {
-      if (response.status === 200) {
-        // Use client.receive when you received a JSON-RPC response.
-        return response.json().then(jsonRPCResponse => client.receive(jsonRPCResponse));
-      } else if (jsonRPCRequest.id !== undefined) {
-        return Promise.reject(new Error(response.statusText));
-      }
-    })
+const client = new JSONRPCClient((jsonRPCRequest) =>
+  fetch("http://localhost/json-rpc", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+    },
+    body: JSON.stringify(jsonRPCRequest),
+  }).then((response) => {
+    if (response.status === 200) {
+      // Use client.receive when you received a JSON-RPC response.
+      return response
+        .json()
+        .then((jsonRPCResponse) => client.receive(jsonRPCResponse));
+    } else if (jsonRPCRequest.id !== undefined) {
+      return Promise.reject(new Error(response.statusText));
+    }
+  })
 );
 
 // Use client.request to make a JSON-RPC request call.
 // The function returns a promise of the result.
-client.request("echo", { text: "Hello, World!" }).then(result => console.log(result));
+client
+  .request("echo", { text: "Hello, World!" })
+  .then((result) => console.log(result));
 
 // Use client.notify to make a JSON-RPC notification call.
 // By definition, JSON-RPC notification does not respond.
@@ -130,10 +138,10 @@ const client = new JSONRPCClient(
       method: "POST",
       headers: {
         "content-type": "application/json",
-        authorization: `Bearer ${token}` // Use the passed token
+        authorization: `Bearer ${token}`, // Use the passed token
       },
-      body: JSON.stringify(jsonRPCRequest)
-    }).then(response => {
+      body: JSON.stringify(jsonRPCRequest),
+    }).then((response) => {
       // ...
     })
 );
@@ -152,11 +160,11 @@ const webSocket = new WebSocket("ws://localhost");
 
 const serverAndClient = new JSONRPCServerAndClient(
   new JSONRPCServer(),
-  new JSONRPCClient(request => {
+  new JSONRPCClient((request) => {
     try {
-      webSocket.send(JSON.stringify(request))
+      webSocket.send(JSON.stringify(request));
       return Promise.resolve();
-    } catch(error) {
+    } catch (error) {
       return Promise.reject(error);
     }
   })
@@ -164,17 +172,20 @@ const serverAndClient = new JSONRPCServerAndClient(
 
 webSocket.onmessage = (event) => {
   serverAndClient.receiveAndSend(JSON.parse(event.data.toString()));
-}
+};
 
 // On close, make sure to reject all the pending requests to prevent hanging.
 webSocket.onclose = (event) => {
-  serverAndClient.rejectAllPendingRequests(`Connection is closed (${event.reason}).`);
-}
+  serverAndClient.rejectAllPendingRequests(
+    `Connection is closed (${event.reason}).`
+  );
+};
 
 serverAndClient.addMethod("echo", ({ text }) => text);
 
-serverAndClient.request("add", { x: 1, y: 2 })
-  .then(result => console.log(`1 + 2 = ${result}`));
+serverAndClient
+  .request("add", { x: 1, y: 2 })
+  .then((result) => console.log(`1 + 2 = ${result}`));
 ```
 
 ### Error handling
@@ -182,12 +193,80 @@ serverAndClient.request("add", { x: 1, y: 2 })
 To respond an error, reject with an `Error`. On the client side, the promise will be rejected with an `Error` object with the same message.
 
 ```javascript
-server.addMethod("fail", () => Promise.reject(new Error("This is an error message.")));
+server.addMethod("fail", () =>
+  Promise.reject(new Error("This is an error message."))
+);
 
 client.request("fail").then(
   () => console.log("This does not get called"),
-  error => console.error(error.message) // Outputs "This is an error message."
+  (error) => console.error(error.message) // Outputs "This is an error message."
 );
+```
+
+### Advanced APIs
+
+Use the advanced methods to handle bare JSON-RPC messages.
+
+#### Server
+
+```typescript
+import { JSONRPC, JSONRPCResponse, JSONRPCServer } from "json-rpc-2.0";
+
+const server = new JSONRPCServer();
+
+// Advanced method takes a raw JSON-RPC request and returns a raw JSON-RPC response
+server.addMethodAdvanced(
+  "doSomething",
+  (jsonRPCRequest: JSONRPCRequest): PromiseLike<JSONRPCResponse> => {
+    if (isValid(jsonRPCRequest.params)) {
+      return {
+        jsonrpc: JSONRPC,
+        id: jsonRPCRequest.id,
+        result: "Params are valid",
+      };
+    } else {
+      return {
+        jsonrpc: JSONRPC,
+        id: jsonRPCRequest.id,
+        error: {
+          code: -100,
+          message: "Params are invalid",
+          data: jsonRPCRequest.params,
+        },
+      };
+    }
+  }
+);
+```
+
+#### Client
+
+```typescript
+const send = () => {
+  // ...
+};
+let nextID: number = 0;
+const createID = () => nextID++;
+
+// To avoid conflict ID between basic and advanced method request, inject a custom ID factory function.
+const client = new JSONRPCClient(send, createID);
+
+const jsonRPCRequest: JSONRPCRequest = {
+  // ...
+};
+
+// Advanced method takes a raw JSON-RPC request and returns a raw JSON-RPC response
+client
+  .requestAdvanced(jsonRPCRequest)
+  .then((jsonRPCResponse: JSONRPCResponse) => {
+    if (jsonRPCResponse.error) {
+      console.log(
+        `Received an error with code ${jsonRPCResponse.error.code} and message ${jsonRPCResponse.error.message}`
+      );
+    } else {
+      doSomethingWithResult(jsonRPCResponse.result);
+    }
+  });
 ```
 
 ## Build
