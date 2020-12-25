@@ -205,7 +205,7 @@ client.request("fail").then(
 
 ### Advanced APIs
 
-Use the advanced methods to handle bare JSON-RPC messages.
+Use the advanced APIs to handle raw JSON-RPC messages.
 
 #### Server
 
@@ -242,6 +242,13 @@ server.addMethodAdvanced(
 #### Client
 
 ```typescript
+import {
+  JSONRPC,
+  JSONRPCClient,
+  JSONRPCRequest,
+  JSONRPCResponse,
+} from "json-rpc-2.0";
+
 const send = () => {
   // ...
 };
@@ -252,7 +259,13 @@ const createID = () => nextID++;
 const client = new JSONRPCClient(send, createID);
 
 const jsonRPCRequest: JSONRPCRequest = {
-  // ...
+  jsonrpc: JSONRPC,
+  id: createID(),
+  method: "doSomething",
+  params: {
+    foo: "foo",
+    bar: "bar",
+  },
 };
 
 // Advanced method takes a raw JSON-RPC request and returns a raw JSON-RPC response
