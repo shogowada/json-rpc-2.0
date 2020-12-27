@@ -6,15 +6,19 @@ import {
   JSONRPCID,
   JSONRPCErrorCode,
   createJSONRPCErrorResponse,
-  isJSONRPCRequest
+  isJSONRPCRequest,
 } from "./models";
 
-export type SimpleJSONRPCMethod = (params?: Partial<JSONRPCParams>) => any;
-export type JSONRPCMethod<ServerParams = void> = (
-  request: JSONRPCRequest
-) =>
-  | JSONRPCResponsePromise
-  | ((serverParams?: ServerParams) => JSONRPCResponsePromise);
+export type SimpleJSONRPCMethod<ServerParams> = (
+  params?: Partial<JSONRPCParams>,
+  serverParams?: ServerParams
+) => any;
+
+export type JSONRPCMethod<ServerParams> = (
+  request: JSONRPCRequest,
+  serverParams?: ServerParams
+) => JSONRPCResponsePromise;
+
 export type JSONRPCResponsePromise = PromiseLike<JSONRPCResponse | null>;
 
 type NameToMethodDictionary<ServerParams> = {
@@ -37,20 +41,19 @@ export class JSONRPCServer<ServerParams = void> {
     this.nameToMethodDictionary = {};
   }
 
-  addMethod(name: string, method: SimpleJSONRPCMethod): void {
+  addMethod(name: string, method: SimpleJSONRPCMethod<ServerParams>): void {
     this.addMethodAdvanced(name, this.toJSONRPCMethod(method));
   }
 
   private toJSONRPCMethod(
-    method: SimpleJSONRPCMethod
+    method: SimpleJSONRPCMethod<ServerParams>
   ): JSONRPCMethod<ServerParams> {
-    return (request: JSONRPCRequest) => (
+    return (
+      request: JSONRPCRequest,
       serverParams: ServerParams
     ): JSONRPCResponsePromise => {
-      let response = method(request.params);
-      if (typeof response === "function") {
-        response = response(serverParams);
-      }
+      let response = method(request.params, serverParams);
+
       return Promise.resolve(response).then(
         (result: any) => mapResultToJSONRPCResponse(request.id, result),
         (error: any) => {
@@ -67,7 +70,7 @@ export class JSONRPCServer<ServerParams = void> {
   addMethodAdvanced(name: string, method: JSONRPCMethod<ServerParams>): void {
     this.nameToMethodDictionary = {
       ...this.nameToMethodDictionary,
-      [name]: method
+      [name]: method,
     };
   }
 
@@ -87,7 +90,7 @@ export class JSONRPCServer<ServerParams = void> {
         request,
         serverParams
       );
-      return response.then(response => mapResponse(request, response));
+      return response.then((response) => mapResponse(request, response));
     } else if (request.id !== undefined) {
       return Promise.resolve(createMethodNotFoundResponse(request.id));
     } else {
@@ -98,24 +101,18 @@ export class JSONRPCServer<ServerParams = void> {
   private callMethod(
     method: JSONRPCMethod<ServerParams>,
     request: JSONRPCRequest,
-    serverParams: ServerParams | undefined
+    serverParams?: ServerParams
   ): JSONRPCResponsePromise {
     const onError = (error: any): JSONRPCResponsePromise => {
       console.warn(
-        `An unexpected error occurred while executing "${
-          request.method
-        }" JSON-RPC method:`,
+        `An unexpected error occurred while executing "${request.method}" JSON-RPC method:`,
         error
       );
       return Promise.resolve(mapErrorToJSONRPCResponse(request.id, error));
     };
 
     try {
-      let response = method(request);
-      if (typeof response === "function") {
-        response = response(serverParams);
-      }
-      return response.then(undefined, onError);
+      return method(request, serverParams).then(undefined, onError);
     } catch (error) {
       return onError(error);
     }
@@ -130,7 +127,7 @@ const mapResultToJSONRPCResponse = (
     return {
       jsonrpc: JSONRPC,
       id,
-      result: result === undefined ? null : result
+      result: result === undefined ? null : result,
     };
   } else {
     return null;

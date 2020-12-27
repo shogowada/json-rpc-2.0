@@ -32,7 +32,7 @@ describe("JSONRPCServer", () => {
     beforeEach(() => {
       server.addMethod(
         "echo",
-        ({ text }: Params) => (serverParams?: ServerParams) => {
+        ({ text }: Params, serverParams?: ServerParams) => {
           if (serverParams) {
             return `${serverParams.userID} said ${text}`;
           } else {
@@ -49,16 +49,16 @@ describe("JSONRPCServer", () => {
             jsonrpc: JSONRPC,
             id: 0,
             method: "echo",
-            params: { text: "foo" }
+            params: { text: "foo" },
           })
-          .then(givenResponse => (response = givenResponse));
+          .then((givenResponse) => (response = givenResponse));
       });
 
       it("should echo the text", () => {
         expect(response).to.deep.equal({
           jsonrpc: JSONRPC,
           id: 0,
-          result: "foo"
+          result: "foo",
         });
       });
     });
@@ -71,18 +71,18 @@ describe("JSONRPCServer", () => {
               jsonrpc: JSONRPC,
               id: 0,
               method: "echo",
-              params: { text: "foo" }
+              params: { text: "foo" },
             },
             { userID: "bar" }
           )
-          .then(givenResponse => (response = givenResponse));
+          .then((givenResponse) => (response = givenResponse));
       });
 
       it("should echo the text with the user ID", () => {
         expect(response).to.deep.equal({
           jsonrpc: JSONRPC,
           id: 0,
-          result: "bar said foo"
+          result: "bar said foo",
         });
       });
     });
@@ -94,14 +94,14 @@ describe("JSONRPCServer", () => {
 
       return server
         .receive({ jsonrpc: JSONRPC, id: 0, method: "ack" })
-        .then(givenResponse => (response = givenResponse));
+        .then((givenResponse) => (response = givenResponse));
     });
 
     it("should response with null result", () => {
       expect(response).to.deep.equal({
         jsonrpc: JSONRPC,
         id: 0,
-        result: null
+        result: null,
       });
     });
   });
@@ -114,7 +114,7 @@ describe("JSONRPCServer", () => {
 
       return server
         .receive({ jsonrpc: JSONRPC, id: 0, method: "throw" })
-        .then(givenResponse => (response = givenResponse));
+        .then((givenResponse) => (response = givenResponse));
     });
 
     it("should respond error", () => {
@@ -123,8 +123,8 @@ describe("JSONRPCServer", () => {
         id: 0,
         error: {
           code: 0,
-          message: "Test throwing"
-        }
+          message: "Test throwing",
+        },
       });
     });
   });
@@ -137,7 +137,7 @@ describe("JSONRPCServer", () => {
 
       return server
         .receive({ jsonrpc: JSONRPC, id: 0, method: "reject" })
-        .then(givenResponse => (response = givenResponse));
+        .then((givenResponse) => (response = givenResponse));
     });
 
     it("should respond error", () => {
@@ -146,8 +146,8 @@ describe("JSONRPCServer", () => {
         id: 0,
         error: {
           code: 0,
-          message: "Test rejecting"
-        }
+          message: "Test rejecting",
+        },
       });
     });
   });
@@ -158,7 +158,7 @@ describe("JSONRPCServer", () => {
 
       return server
         .receive({ jsonrpc: JSONRPC, method: "foo" })
-        .then(givenResponse => (response = givenResponse));
+        .then((givenResponse) => (response = givenResponse));
     });
 
     it("should not respond", () => {
@@ -172,7 +172,7 @@ describe("JSONRPCServer", () => {
 
       return server
         .receive({ jsonrpc: JSONRPC, method: "foo" })
-        .then(givenResponse => (response = givenResponse));
+        .then((givenResponse) => (response = givenResponse));
     });
 
     it("should not respond", () => {
@@ -188,9 +188,9 @@ describe("JSONRPCServer", () => {
         .receive({
           jsonrpc: JSONRPC,
           id: 0,
-          method: "foo"
+          method: "foo",
         })
-        .then(givenResponse => (response = givenResponse));
+        .then((givenResponse) => (response = givenResponse));
     });
 
     it("should respond error", () => {
@@ -199,8 +199,8 @@ describe("JSONRPCServer", () => {
         id: 0,
         error: {
           code: JSONRPCErrorCode.InternalError,
-          message: "Internal error"
-        }
+          message: "Internal error",
+        },
       });
     });
   });
@@ -211,9 +211,9 @@ describe("JSONRPCServer", () => {
         .receive({
           jsonrpc: JSONRPC,
           id: 0,
-          method: "foo"
+          method: "foo",
         })
-        .then(givenResponse => (response = givenResponse));
+        .then((givenResponse) => (response = givenResponse));
     });
 
     it("should respond error", () => {
@@ -222,8 +222,8 @@ describe("JSONRPCServer", () => {
         id: 0,
         error: {
           code: JSONRPCErrorCode.MethodNotFound,
-          message: "Method not found"
-        }
+          message: "Method not found",
+        },
       });
     });
   });
