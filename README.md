@@ -62,7 +62,7 @@ To hook authentication into the API, inject custom params:
 ```javascript
 const server = new JSONRPCServer();
 
-// The method can also take a custom parameter.
+// The method can also take a custom parameter as the second parameter.
 // Use this to inject whatever information that method needs outside the regular JSON-RPC request.
 server.addMethod("echo", ({ text }, { userID }) => `${userID} said ${text}`);
 
