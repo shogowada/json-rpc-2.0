@@ -48,22 +48,20 @@ export class JSONRPCServer<ServerParams = void> {
   private toJSONRPCMethod(
     method: SimpleJSONRPCMethod<ServerParams>
   ): JSONRPCMethod<ServerParams> {
-    return (
+    return async (
       request: JSONRPCRequest,
       serverParams: ServerParams
-    ): JSONRPCResponsePromise => {
-      let response = method(request.params, serverParams);
-
-      return Promise.resolve(response).then(
-        (result: any) => mapResultToJSONRPCResponse(request.id, result),
-        (error: any) => {
-          console.warn(
-            `JSON-RPC method ${request.method} responded an error`,
-            error
-          );
-          return mapErrorToJSONRPCResponse(request.id, error);
-        }
-      );
+    ): Promise<JSONRPCResponse | null> => {
+      try {
+        const result = await method(request.params, serverParams);
+        return mapResultToJSONRPCResponse(request.id, result);
+      } catch (error) {
+        console.warn(
+          `JSON-RPC method ${request.method} responded an error`,
+          error
+        );
+        return mapErrorToJSONRPCResponse(request.id, error);
+      }
     };
   }
 
@@ -74,47 +72,39 @@ export class JSONRPCServer<ServerParams = void> {
     };
   }
 
-  receive(
+  async receive(
     request: JSONRPCRequest,
     serverParams?: ServerParams
-  ): JSONRPCResponsePromise {
+  ): Promise<JSONRPCResponse | null> {
     const method = this.nameToMethodDictionary[request.method];
 
     if (!isJSONRPCRequest(request)) {
       const message = "Received an invalid JSON-RPC request";
       console.warn(message, request);
-      return Promise.reject(new Error(message));
+      throw new Error(message);
     } else if (method) {
-      const response: JSONRPCResponsePromise = this.callMethod(
-        method,
-        request,
-        serverParams
-      );
-      return response.then((response) => mapResponse(request, response));
+      const response = await this.callMethod(method, request, serverParams);
+      return mapResponse(request, response);
     } else if (request.id !== undefined) {
-      return Promise.resolve(createMethodNotFoundResponse(request.id));
+      return createMethodNotFoundResponse(request.id);
     } else {
-      return Promise.resolve(null);
+      return null;
     }
   }
 
-  private callMethod(
+  private async callMethod(
     method: JSONRPCMethod<ServerParams>,
     request: JSONRPCRequest,
     serverParams?: ServerParams
-  ): JSONRPCResponsePromise {
-    const onError = (error: any): JSONRPCResponsePromise => {
+  ): Promise<JSONRPCResponse | null> {
+    try {
+      return await method(request, serverParams);
+    } catch (error) {
       console.warn(
         `An unexpected error occurred while executing "${request.method}" JSON-RPC method:`,
         error
       );
-      return Promise.resolve(mapErrorToJSONRPCResponse(request.id, error));
-    };
-
-    try {
-      return method(request, serverParams).then(undefined, onError);
-    } catch (error) {
-      return onError(error);
+      return mapErrorToJSONRPCResponse(request.id, error);
     }
   }
 }
