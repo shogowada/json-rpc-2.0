@@ -1,6 +1,12 @@
 import { describe, beforeEach, it } from "mocha";
 import { expect } from "chai";
-import { JSONRPCClient, JSONRPC, JSONRPCResponse, JSONRPCRequest } from ".";
+import {
+  JSONRPCClient,
+  JSONRPC,
+  JSONRPCResponse,
+  JSONRPCRequest,
+  JSONRPCRemoteError,
+} from ".";
 
 interface ClientParams {
   token: string;
@@ -109,6 +115,9 @@ describe("JSONRPCClient", () => {
             error: {
               code: 0,
               message: "This is a test. Do not panic.",
+              data: {
+                test: true,
+              },
             },
           };
 
@@ -119,6 +128,8 @@ describe("JSONRPCClient", () => {
 
         it("should reject with the error message", () => {
           expect(error.message).to.equal(response.error!.message);
+          expect(error.code).to.equal(0);
+          expect(error.data.test).to.equal(true);
         });
       });
 

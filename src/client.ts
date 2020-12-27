@@ -19,6 +19,17 @@ type Resolve = (response: JSONRPCResponse) => void;
 
 type IDToDeferredMap = Map<JSONRPCID, Resolve>;
 
+export class JSONRPCRemoteError extends Error {
+  constructor(
+    message: string,
+    readonly code: number,
+    readonly response?: JSONRPCResponse,
+    readonly data?: any
+  ) {
+    super(message);
+  }
+}
+
 export class JSONRPCClient<ClientParams = void> {
   private idToResolveMap: IDToDeferredMap;
   private id: number;
@@ -55,7 +66,12 @@ export class JSONRPCClient<ClientParams = void> {
     if (response.result !== undefined && !response.error) {
       return response.result;
     } else if (response.result === undefined && response.error) {
-      throw new Error(response.error.message);
+      throw new JSONRPCRemoteError(
+        response.error.message,
+        response.error.code,
+        response,
+        response.error.data
+      );
     } else {
       throw new Error("An unexpected error occurred");
     }
