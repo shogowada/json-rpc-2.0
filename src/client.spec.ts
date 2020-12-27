@@ -22,7 +22,7 @@ describe("JSONRPCClient", () => {
     reject = undefined;
 
     client = new JSONRPCClient(
-      request => clientParams => {
+      (request, clientParams) => {
         lastRequest = request;
         lastClientParams = clientParams;
         return new Promise((givenResolve, givenReject) => {
@@ -43,12 +43,10 @@ describe("JSONRPCClient", () => {
       result = undefined;
       error = undefined;
 
-      promise = client
-        .request("foo", ["bar"])
-        .then(
-          givenResult => (result = givenResult),
-          givenError => (error = givenError)
-        );
+      promise = client.request("foo", ["bar"]).then(
+        (givenResult) => (result = givenResult),
+        (givenError) => (error = givenError)
+      );
     });
 
     it("should send the request", () => {
@@ -56,7 +54,7 @@ describe("JSONRPCClient", () => {
         jsonrpc: JSONRPC,
         id,
         method: "foo",
-        params: ["bar"]
+        params: ["bar"],
       });
     });
 
@@ -72,7 +70,7 @@ describe("JSONRPCClient", () => {
           response = {
             jsonrpc: JSONRPC,
             id,
-            result: "foo"
+            result: "foo",
           };
 
           client.receive(response);
@@ -90,7 +88,7 @@ describe("JSONRPCClient", () => {
           client.receive({
             jsonrpc: JSONRPC,
             id,
-            result: 0
+            result: 0,
           });
 
           return promise;
@@ -110,8 +108,8 @@ describe("JSONRPCClient", () => {
             id,
             error: {
               code: 0,
-              message: "This is a test. Do not panic."
-            }
+              message: "This is a test. Do not panic.",
+            },
           };
 
           client.receive(response);
@@ -135,8 +133,8 @@ describe("JSONRPCClient", () => {
               result: "foo",
               error: {
                 code: 0,
-                message: "bar"
-              }
+                message: "bar",
+              },
             };
 
             client.receive(response);
@@ -155,7 +153,7 @@ describe("JSONRPCClient", () => {
           beforeEach(() => {
             response = {
               jsonrpc: JSONRPC,
-              id
+              id,
             };
 
             client.receive(response);
@@ -189,7 +187,7 @@ describe("JSONRPCClient", () => {
             client.receive({
               jsonrpc: JSONRPC,
               id,
-              result: "foo"
+              result: "foo",
             });
 
             return promise;
@@ -265,7 +263,7 @@ describe("JSONRPCClient", () => {
       expect(lastRequest).to.deep.equal({
         jsonrpc: JSONRPC,
         method: "foo",
-        params: ["bar"]
+        params: ["bar"],
       });
     });
   });
