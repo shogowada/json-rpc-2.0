@@ -6,15 +6,20 @@ import {
   JSONRPCID,
   JSONRPCErrorCode,
   createJSONRPCErrorResponse,
-  isJSONRPCRequest
+  isJSONRPCRequest,
 } from "./models";
+import { createLogDeprecationWarning } from "./internal";
 
-export type SimpleJSONRPCMethod = (params?: Partial<JSONRPCParams>) => any;
+export type SimpleJSONRPCMethod<ServerParams = void> = (
+  params: Partial<JSONRPCParams> | undefined,
+  serverParams: ServerParams | undefined
+) => any;
 export type JSONRPCMethod<ServerParams = void> = (
-  request: JSONRPCRequest
+  request: JSONRPCRequest,
+  serverParams: ServerParams | undefined
 ) =>
   | JSONRPCResponsePromise
-  | ((serverParams?: ServerParams) => JSONRPCResponsePromise);
+  | ((serverParams: ServerParams | undefined) => JSONRPCResponsePromise);
 export type JSONRPCResponsePromise = PromiseLike<JSONRPCResponse | null>;
 
 type NameToMethodDictionary<ServerParams> = {
@@ -30,6 +35,13 @@ const createMethodNotFoundResponse = (id: JSONRPCID): JSONRPCResponse =>
     "Method not found"
   );
 
+const logHigherOrderFunctionDeprecationWarning = createLogDeprecationWarning(
+  `Using a higher order function on JSONRPCServer.addMethod/addMethodAdvanced is deprecated.
+Instead of this: jsonRPCServer.addMethod(methodName, (params) => (serverParams) => /* no change here */)
+Do this:         jsonRPCServer.addMethod(methodName, (params, serverParams) => /* no change here */)
+The old way still works, but we will drop the support in the future.`
+);
+
 export class JSONRPCServer<ServerParams = void> {
   private nameToMethodDictionary: NameToMethodDictionary<ServerParams>;
 
@@ -37,17 +49,17 @@ export class JSONRPCServer<ServerParams = void> {
     this.nameToMethodDictionary = {};
   }
 
-  addMethod(name: string, method: SimpleJSONRPCMethod): void {
+  addMethod(name: string, method: SimpleJSONRPCMethod<ServerParams>): void {
     this.addMethodAdvanced(name, this.toJSONRPCMethod(method));
   }
 
   private toJSONRPCMethod(
-    method: SimpleJSONRPCMethod
+    method: SimpleJSONRPCMethod<ServerParams>
   ): JSONRPCMethod<ServerParams> {
     return (request: JSONRPCRequest) => (
       serverParams: ServerParams
     ): JSONRPCResponsePromise => {
-      let response = method(request.params);
+      let response = method(request.params, serverParams);
       if (typeof response === "function") {
         response = response(serverParams);
       }
@@ -67,7 +79,7 @@ export class JSONRPCServer<ServerParams = void> {
   addMethodAdvanced(name: string, method: JSONRPCMethod<ServerParams>): void {
     this.nameToMethodDictionary = {
       ...this.nameToMethodDictionary,
-      [name]: method
+      [name]: method,
     };
   }
 
@@ -87,7 +99,7 @@ export class JSONRPCServer<ServerParams = void> {
         request,
         serverParams
       );
-      return response.then(response => mapResponse(request, response));
+      return response.then((response) => mapResponse(request, response));
     } else if (request.id !== undefined) {
       return Promise.resolve(createMethodNotFoundResponse(request.id));
     } else {
@@ -102,17 +114,16 @@ export class JSONRPCServer<ServerParams = void> {
   ): JSONRPCResponsePromise {
     const onError = (error: any): JSONRPCResponsePromise => {
       console.warn(
-        `An unexpected error occurred while executing "${
-          request.method
-        }" JSON-RPC method:`,
+        `An unexpected error occurred while executing "${request.method}" JSON-RPC method:`,
         error
       );
       return Promise.resolve(mapErrorToJSONRPCResponse(request.id, error));
     };
 
     try {
-      let response = method(request);
+      let response = method(request, serverParams);
       if (typeof response === "function") {
+        logHigherOrderFunctionDeprecationWarning();
         response = response(serverParams);
       }
       return response.then(undefined, onError);
@@ -130,7 +141,7 @@ const mapResultToJSONRPCResponse = (
     return {
       jsonrpc: JSONRPC,
       id,
-      result: result === undefined ? null : result
+      result: result === undefined ? null : result,
     };
   } else {
     return null;
