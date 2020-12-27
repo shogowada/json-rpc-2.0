@@ -4,7 +4,7 @@ import {
   isJSONRPCRequest,
   isJSONRPCResponse,
   JSONRPCParams,
-  JSONRPCResponse
+  JSONRPCResponse,
 } from "./models";
 
 export class JSONRPCServerAndClient<ServerParams = void, ClientParams = void> {
@@ -13,7 +13,7 @@ export class JSONRPCServerAndClient<ServerParams = void, ClientParams = void> {
     public client: JSONRPCClient<ClientParams>
   ) {}
 
-  addMethod(name: string, method: SimpleJSONRPCMethod): void {
+  addMethod(name: string, method: SimpleJSONRPCMethod<ServerParams>): void {
     this.server.addMethod(name, method);
   }
 
