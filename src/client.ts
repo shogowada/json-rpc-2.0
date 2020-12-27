@@ -39,11 +39,11 @@ export class JSONRPCClient<ClientParams = void> {
     }
   }
 
-  request(
+  async request(
     method: string,
     params?: JSONRPCParams,
     clientParams?: ClientParams
-  ): PromiseLike<any> {
+  ): Promise<any> {
     const request: JSONRPCRequest = {
       jsonrpc: JSONRPC,
       method,
@@ -51,52 +51,52 @@ export class JSONRPCClient<ClientParams = void> {
       id: this._createID(),
     };
 
-    return this.requestAdvanced(request, clientParams).then((response) => {
-      if (response.result !== undefined && !response.error) {
-        return response.result;
-      } else if (response.result === undefined && response.error) {
-        return Promise.reject(new Error(response.error.message));
-      } else {
-        return Promise.reject(new Error("An unexpected error occurred"));
-      }
-    });
+    const response = await this.requestAdvanced(request, clientParams);
+    if (response.result !== undefined && !response.error) {
+      return response.result;
+    } else if (response.result === undefined && response.error) {
+      throw new Error(response.error.message);
+    } else {
+      throw new Error("An unexpected error occurred");
+    }
   }
 
-  requestAdvanced(
+  async requestAdvanced(
     request: JSONRPCRequest,
     clientParams?: ClientParams
-  ): PromiseLike<JSONRPCResponse> {
+  ): Promise<JSONRPCResponse> {
     const promise: PromiseLike<JSONRPCResponse> = new Promise((resolve) =>
       this.idToResolveMap.set(request.id!, resolve)
     );
-    return this.send(request, clientParams).then(
-      () => promise,
-      (error) => {
-        this.receive(
-          createJSONRPCErrorResponse(
-            request.id!,
-            0,
-            (error && error.message) || "Failed to send a request"
-          )
-        );
-        return promise;
-      }
-    );
+
+    try {
+      await this.send(request, clientParams);
+    } catch (error) {
+      this.receive(
+        createJSONRPCErrorResponse(
+          request.id!,
+          0,
+          (error && error.message) || "Failed to send a request"
+        )
+      );
+    }
+
+    return promise;
   }
 
-  notify(
+  async notify(
     method: string,
     params?: JSONRPCParams,
     clientParams?: ClientParams
-  ): void {
-    this.send(
+  ): Promise<void> {
+    await this.send(
       {
         jsonrpc: JSONRPC,
         method,
         params,
       },
       clientParams as ClientParams
-    ).then(undefined, () => undefined);
+    );
   }
 
   send(payload: any, clientParams?: ClientParams): PromiseLike<void> {
