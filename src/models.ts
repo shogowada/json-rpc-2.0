@@ -46,20 +46,27 @@ export enum JSONRPCErrorCode {
   InvalidRequest = -32600,
   MethodNotFound = -32601,
   InvalidParams = -32602,
-  InternalError = -32603
+  InternalError = -32603,
 }
 
 export const createJSONRPCErrorResponse = (
   id: JSONRPCID,
   code: number,
-  message: string
+  message: string,
+  data?: any
 ): JSONRPCResponse => {
-  return {
+  const errorResponse: JSONRPCResponse = {
     jsonrpc: JSONRPC,
     id,
     error: {
       code,
-      message
-    }
+      message,
+    },
   };
+
+  if (data) {
+    errorResponse.error!.data = data;
+  }
+
+  return errorResponse;
 };

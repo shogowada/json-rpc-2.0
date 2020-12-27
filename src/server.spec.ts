@@ -152,6 +152,54 @@ describe("JSONRPCServer", () => {
     });
   });
 
+  describe("with a getErrorData option", () => {
+    beforeEach(() => {
+      server = new JSONRPCServer({
+        getErrorData: (error) => ({ testErrorData: true }),
+      });
+    });
+
+    it("should respond with the error and data if the handler throws", async () => {
+      server.addMethod("throw", () => {
+        throw new Error("Test throwing");
+      });
+
+      await server
+        .receive({ jsonrpc: JSONRPC, id: 0, method: "throw" })
+        .then((givenResponse) => (response = givenResponse));
+
+      expect(response).to.deep.equal({
+        jsonrpc: JSONRPC,
+        id: 0,
+        error: {
+          code: 0,
+          message: "Test throwing",
+          data: { testErrorData: true },
+        },
+      });
+    });
+
+    it("should respond with the error and data if the handler rejects", async () => {
+      server.addMethodAdvanced("reject", () =>
+        Promise.reject(new Error("Test rejecting"))
+      );
+
+      await server
+        .receive({ jsonrpc: JSONRPC, id: 0, method: "reject" })
+        .then((givenResponse) => (response = givenResponse));
+
+      expect(response).to.deep.equal({
+        jsonrpc: JSONRPC,
+        id: 0,
+        error: {
+          code: 0,
+          message: "Test rejecting",
+          data: { testErrorData: true },
+        },
+      });
+    });
+  });
+
   describe("responding to a notification", () => {
     beforeEach(() => {
       server.addMethod("foo", () => "foo");

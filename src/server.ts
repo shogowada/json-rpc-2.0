@@ -17,9 +17,9 @@ export type SimpleJSONRPCMethod<ServerParams> = (
 export type JSONRPCMethod<ServerParams> = (
   request: JSONRPCRequest,
   serverParams?: ServerParams
-) => JSONRPCResponsePromise;
+) => PromiseLike<JSONRPCResponse | null>;
 
-export type JSONRPCResponsePromise = PromiseLike<JSONRPCResponse | null>;
+export type ErrorDataGetter = (error: any) => any;
 
 type NameToMethodDictionary<ServerParams> = {
   [name: string]: JSONRPCMethod<ServerParams>;
@@ -37,8 +37,11 @@ const createMethodNotFoundResponse = (id: JSONRPCID): JSONRPCResponse =>
 export class JSONRPCServer<ServerParams = void> {
   private nameToMethodDictionary: NameToMethodDictionary<ServerParams>;
 
-  constructor() {
+  getErrorData?: ErrorDataGetter;
+
+  constructor(options?: { getErrorData?: ErrorDataGetter }) {
     this.nameToMethodDictionary = {};
+    this.getErrorData = options?.getErrorData;
   }
 
   addMethod(name: string, method: SimpleJSONRPCMethod<ServerParams>): void {
@@ -60,7 +63,7 @@ export class JSONRPCServer<ServerParams = void> {
           `JSON-RPC method ${request.method} responded an error`,
           error
         );
-        return mapErrorToJSONRPCResponse(request.id, error);
+        return this.mapErrorToJSONRPCResponse(request.id, error);
       }
     };
   }
@@ -104,7 +107,20 @@ export class JSONRPCServer<ServerParams = void> {
         `An unexpected error occurred while executing "${request.method}" JSON-RPC method:`,
         error
       );
-      return mapErrorToJSONRPCResponse(request.id, error);
+      return this.mapErrorToJSONRPCResponse(request.id, error);
+    }
+  }
+
+  private mapErrorToJSONRPCResponse(id: JSONRPCID | undefined, error: any) {
+    if (id !== undefined) {
+      return createJSONRPCErrorResponse(
+        id,
+        DefaultErrorCode,
+        (error && error.message) || "An unexpected error occurred",
+        this.getErrorData ? this.getErrorData(error) : undefined
+      );
+    } else {
+      return null;
     }
   }
 }
@@ -119,21 +135,6 @@ const mapResultToJSONRPCResponse = (
       id,
       result: result === undefined ? null : result,
     };
-  } else {
-    return null;
-  }
-};
-
-const mapErrorToJSONRPCResponse = (
-  id: JSONRPCID | undefined,
-  error: any
-): JSONRPCResponse | null => {
-  if (id !== undefined) {
-    return createJSONRPCErrorResponse(
-      id,
-      DefaultErrorCode,
-      (error && error.message) || "An unexpected error occurred"
-    );
   } else {
     return null;
   }
