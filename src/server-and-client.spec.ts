@@ -71,9 +71,10 @@ describe("JSONRPCServerAndClient", () => {
   describe("having a pending request", () => {
     let promise: PromiseLike<void>;
     let resolve: () => void;
+
     beforeEach(() => {
       serverAndClient2.addMethod("hang", () => {
-        return new Promise(givenResolve => (resolve = givenResolve));
+        return new Promise<void>((givenResolve) => (resolve = givenResolve));
       });
 
       promise = serverAndClient1.request("hang");
@@ -92,7 +93,7 @@ describe("JSONRPCServerAndClient", () => {
       it("should reject the pending request", () => {
         return promise.then(
           () => Promise.reject(new Error("Expected to fail")),
-          error => expect(error.message).to.equal(message)
+          (error) => expect(error.message).to.equal(message)
         );
       });
     });
