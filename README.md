@@ -62,19 +62,16 @@ To hook authentication into the API, inject custom params:
 ```javascript
 const server = new JSONRPCServer();
 
-// If the method is a higher-order function (a function that returns a function),
-// it will pass the custom parameter to the returned function.
+// The method can also take a custom parameter as the second parameter.
 // Use this to inject whatever information that method needs outside the regular JSON-RPC request.
-server.addMethod("echo", ({ text }) => ({ userID }) =>
-  `${userID} said ${text}`
-);
+server.addMethod("echo", ({ text }, { userID }) => `${userID} said ${text}`);
 
 app.post("/json-rpc", (req, res) => {
   const jsonRPCRequest = req.body;
   const userID = getUserID(req);
 
   // server.receive takes an optional second parameter.
-  // The parameter will be injected to the JSON-RPC method if it was a higher-order function.
+  // The parameter will be injected to the JSON-RPC method as the second parameter.
   server.receive(jsonRPCRequest, { userID }).then((jsonRPCResponse) => {
     if (jsonRPCResponse) {
       res.json(jsonRPCResponse);
@@ -132,8 +129,8 @@ Just like `JSONRPCServer`, you can inject custom params to `JSONRPCClient` too:
 
 ```javascript
 const client = new JSONRPCClient(
-  // If it is a higher-order function, it passes the custom params to the returned function.
-  (jsonRPCRequest) => ({ token }) =>
+  // It can also take a custom parameter as the second parameter.
+  (jsonRPCRequest, { token }) =>
     fetch("http://localhost/json-rpc", {
       method: "POST",
       headers: {

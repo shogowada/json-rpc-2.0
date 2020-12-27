@@ -1,21 +1,29 @@
 import {
   createJSONRPCErrorResponse,
   JSONRPC,
-  JSONRPCErrorCode,
   JSONRPCID,
   JSONRPCParams,
   JSONRPCRequest,
-  JSONRPCResponse
+  JSONRPCResponse,
 } from "./models";
+import { createLogDeprecationWarning } from "./internal";
 
 export type SendRequest<ClientParams> = (
-  payload: any
+  payload: any,
+  clientParams: ClientParams | undefined
 ) => PromiseLike<void> | ((clientParams?: ClientParams) => PromiseLike<void>);
 export type CreateID = () => JSONRPCID;
 
 type Resolve = (response: JSONRPCResponse) => void;
 
 type IDToDeferredMap = Map<JSONRPCID, Resolve>;
+
+const logHigherOrderFunctionDeprecationWarning = createLogDeprecationWarning(
+  `Using a higher order function on JSONRPCClient send method is deprecated.
+Instead of this: new JSONRPCClient((jsonRPCClient) => (clientParams) => /* no change here */)
+Do this:         new JSONRPCClient((jsonRPCClient, clientParams) => /* no change here */)
+The old way still works, but we will drop the support in the future.`
+);
 
 export class JSONRPCClient<ClientParams = void> {
   private idToResolveMap: IDToDeferredMap;
@@ -46,10 +54,10 @@ export class JSONRPCClient<ClientParams = void> {
       jsonrpc: JSONRPC,
       method,
       params,
-      id: this._createID()
+      id: this._createID(),
     };
 
-    return this.requestAdvanced(request, clientParams).then(response => {
+    return this.requestAdvanced(request, clientParams).then((response) => {
       if (response.result !== undefined && !response.error) {
         return response.result;
       } else if (response.result === undefined && response.error) {
@@ -64,12 +72,12 @@ export class JSONRPCClient<ClientParams = void> {
     request: JSONRPCRequest,
     clientParams?: ClientParams
   ): PromiseLike<JSONRPCResponse> {
-    const promise: PromiseLike<JSONRPCResponse> = new Promise(resolve =>
+    const promise: PromiseLike<JSONRPCResponse> = new Promise((resolve) =>
       this.idToResolveMap.set(request.id!, resolve)
     );
     return this.send(request, clientParams).then(
       () => promise,
-      error => {
+      (error) => {
         this.receive(
           createJSONRPCErrorResponse(
             request.id!,
@@ -91,7 +99,7 @@ export class JSONRPCClient<ClientParams = void> {
       {
         jsonrpc: JSONRPC,
         method,
-        params
+        params,
       },
       clientParams
     ).then(undefined, () => undefined);
@@ -101,8 +109,9 @@ export class JSONRPCClient<ClientParams = void> {
     payload: any,
     clientParams: ClientParams | undefined
   ): PromiseLike<void> {
-    let promiseOrFunction = this._send(payload);
+    let promiseOrFunction = this._send(payload, clientParams);
     if (typeof promiseOrFunction === "function") {
+      logHigherOrderFunctionDeprecationWarning();
       promiseOrFunction = promiseOrFunction(clientParams);
     }
     return promiseOrFunction;
