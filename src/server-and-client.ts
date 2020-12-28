@@ -1,9 +1,10 @@
-import { JSONRPCServer, SimpleJSONRPCMethod } from "./server";
+import { JSONRPCMethod, JSONRPCServer, SimpleJSONRPCMethod } from "./server";
 import { JSONRPCClient } from "./client";
 import {
   isJSONRPCRequest,
   isJSONRPCResponse,
   JSONRPCParams,
+  JSONRPCRequest,
   JSONRPCResponse,
 } from "./models";
 
@@ -17,12 +18,23 @@ export class JSONRPCServerAndClient<ServerParams = void, ClientParams = void> {
     this.server.addMethod(name, method);
   }
 
+  addMethodAdvanced(name: string, method: JSONRPCMethod<ServerParams>): void {
+    this.server.addMethodAdvanced(name, method);
+  }
+
   request(
     method: string,
     params?: JSONRPCParams,
     clientParams?: ClientParams
   ): PromiseLike<any> {
     return this.client.request(method, params, clientParams);
+  }
+
+  requestAdvanced(
+    jsonRPCRequest: JSONRPCRequest,
+    clientParams?: ClientParams
+  ): PromiseLike<JSONRPCResponse> {
+    return this.client.requestAdvanced(jsonRPCRequest, clientParams);
   }
 
   notify(
