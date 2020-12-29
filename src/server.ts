@@ -56,11 +56,13 @@ export class JSONRPCServer<ServerParams = void> {
   private toJSONRPCMethod(
     method: SimpleJSONRPCMethod<ServerParams>
   ): JSONRPCMethod<ServerParams> {
-    return (request: JSONRPCRequest) => (
+    return (
+      request: JSONRPCRequest,
       serverParams: ServerParams
     ): JSONRPCResponsePromise => {
       let response = method(request.params, serverParams);
       if (typeof response === "function") {
+        logHigherOrderFunctionDeprecationWarning();
         response = response(serverParams);
       }
       return Promise.resolve(response).then(
