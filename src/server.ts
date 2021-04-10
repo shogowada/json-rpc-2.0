@@ -7,6 +7,7 @@ import {
   JSONRPCErrorCode,
   createJSONRPCErrorResponse,
   isJSONRPCRequest,
+  isJSONRPCID,
 } from "./models";
 import { createLogDeprecationWarning } from "./internal";
 
@@ -27,6 +28,16 @@ type NameToMethodDictionary<ServerParams> = {
 };
 
 const DefaultErrorCode = 0;
+
+const createParseErrorResponse = (): JSONRPCResponse =>
+  createJSONRPCErrorResponse(null, JSONRPCErrorCode.ParseError, "Parse error");
+
+const createInvalidRequestResponse = (request: any): JSONRPCResponse =>
+  createJSONRPCErrorResponse(
+    isJSONRPCID(request.id) ? request.id : null,
+    JSONRPCErrorCode.InvalidRequest,
+    "Invalid Request"
+  );
 
 const createMethodNotFoundResponse = (id: JSONRPCID): JSONRPCResponse =>
   createJSONRPCErrorResponse(
@@ -85,6 +96,26 @@ export class JSONRPCServer<ServerParams = void> {
     };
   }
 
+  receiveJSON(
+    json: string,
+    serverParams?: ServerParams
+  ): JSONRPCResponsePromise {
+    const request: JSONRPCRequest | null = this.tryParseRequestJSON(json);
+    if (request) {
+      return this.receive(request, serverParams);
+    } else {
+      return Promise.resolve(createParseErrorResponse());
+    }
+  }
+
+  private tryParseRequestJSON(json: string): JSONRPCRequest | null {
+    try {
+      return JSON.parse(json);
+    } catch {
+      return null;
+    }
+  }
+
   receive(
     request: JSONRPCRequest,
     serverParams?: ServerParams
@@ -92,9 +123,7 @@ export class JSONRPCServer<ServerParams = void> {
     const method = this.nameToMethodDictionary[request.method];
 
     if (!isJSONRPCRequest(request)) {
-      const message = "Received an invalid JSON-RPC request";
-      console.warn(message, request);
-      return Promise.reject(new Error(message));
+      return Promise.resolve(createInvalidRequestResponse(request));
     } else if (method) {
       const response: JSONRPCResponsePromise = this.callMethod(
         method,

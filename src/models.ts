@@ -4,6 +4,9 @@ export const JSONRPC: JSONRPC = "2.0";
 export type JSONRPCID = string | number | null;
 export type JSONRPCParams = object | any[];
 
+export const isJSONRPCID = (id: any): id is JSONRPCID =>
+  typeof id === "string" || typeof id === "number" || id === null;
+
 export interface JSONRPCRequest {
   jsonrpc: JSONRPC;
   method: string;
@@ -46,7 +49,7 @@ export enum JSONRPCErrorCode {
   InvalidRequest = -32600,
   MethodNotFound = -32601,
   InvalidParams = -32602,
-  InternalError = -32603
+  InternalError = -32603,
 }
 
 export const createJSONRPCErrorResponse = (
@@ -59,7 +62,7 @@ export const createJSONRPCErrorResponse = (
     id,
     error: {
       code,
-      message
-    }
+      message,
+    },
   };
 };

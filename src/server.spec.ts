@@ -76,13 +76,13 @@ describe("JSONRPCServer", () => {
         describe("receiving a request to the method with user ID", () => {
           beforeEach(() => {
             return server
-              .receive(
-                {
+              .receiveJSON(
+                JSON.stringify({
                   jsonrpc: JSONRPC,
                   id: 0,
                   method: "echo",
                   params: { text: "foo" },
-                },
+                }),
                 { userID: "bar" }
               )
               .then((givenResponse) => (response = givenResponse));
@@ -240,18 +240,37 @@ describe("JSONRPCServer", () => {
     });
   });
 
-  describe("receiving an invalid request", () => {
-    let promise: PromiseLike<any>;
+  [{}, "", "invalid JSON"].forEach((invalidJSON) => {
+    describe(`receiving an invalid JSON (${invalidJSON})`, () => {
+      let response: JSONRPCResponse;
 
-    beforeEach(() => {
-      promise = server.receive({} as any);
+      beforeEach(async () => {
+        response = (await server.receiveJSON(invalidJSON as any))!;
+      });
+
+      it("should respond an error", () => {
+        expect(response.error!.code).to.equal(JSONRPCErrorCode.ParseError);
+      });
     });
+  });
 
-    it("should throw", () => {
-      return promise.then(
-        () => Promise.reject(new Error("Expected to fail")),
-        () => undefined
-      );
+  [
+    {},
+    { jsonrpc: JSONRPC },
+    { jsonrpc: JSONRPC + "invalid", method: "" },
+  ].forEach((invalidRequest) => {
+    describe(`receiving an invalid request (${JSON.stringify(
+      invalidRequest
+    )})`, () => {
+      let response: JSONRPCResponse;
+
+      beforeEach(async () => {
+        response = (await server.receive(invalidRequest as any))!;
+      });
+
+      it("should respond an error", () => {
+        expect(response.error!.code).to.equal(JSONRPCErrorCode.InvalidRequest);
+      });
     });
   });
 });
