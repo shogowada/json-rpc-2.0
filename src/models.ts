@@ -64,14 +64,18 @@ export enum JSONRPCErrorCode {
 export const createJSONRPCErrorResponse = (
   id: JSONRPCID,
   code: number,
-  message: string
+  message: string,
+  data?: any
 ): JSONRPCErrorResponse => {
+  const error: JSONRPCError = { code, message };
+
+  if (data) {
+    error.data = data;
+  }
+
   return {
     jsonrpc: JSONRPC,
     id,
-    error: {
-      code,
-      message,
-    },
+    error,
   };
 };

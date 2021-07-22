@@ -220,7 +220,9 @@ server.mapErrorToJSONRPCErrorResponse = (
   return createJSONRPCErrorResponse(
     id,
     error?.code || 0,
-    error?.message || "An unexpected error occurred"
+    error?.message || "An unexpected error occurred",
+    // Optional 4th argument. It maps to error.data of the response.
+    { foo: "bar" }
   );
 };
 ```

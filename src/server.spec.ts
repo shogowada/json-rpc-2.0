@@ -282,9 +282,13 @@ describe("JSONRPCServer", () => {
 
   describe("having a custom mapErrorToJSONRPCErrorResponse method", () => {
     let errorMessagePrefix: string;
+    let errorData: any;
 
     beforeEach(() => {
       errorMessagePrefix = "Error: ";
+      errorData = {
+        foo: "bar",
+      };
 
       server.mapErrorToJSONRPCErrorResponse = (
         id: JSONRPCID,
@@ -293,7 +297,8 @@ describe("JSONRPCServer", () => {
         createJSONRPCErrorResponse(
           id,
           error.code,
-          `${errorMessagePrefix}${error.message}`
+          `${errorMessagePrefix}${error.message}`,
+          errorData
         );
     });
 
@@ -327,6 +332,10 @@ describe("JSONRPCServer", () => {
         expect(response.error!.message).to.equal(
           `${errorMessagePrefix}${errorMessage}`
         );
+      });
+
+      it("should respond a custom error data", () => {
+        expect(response.error!.data).to.deep.equal(errorData);
       });
     });
   });
