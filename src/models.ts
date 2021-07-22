@@ -14,11 +14,20 @@ export interface JSONRPCRequest {
   id?: JSONRPCID;
 }
 
-export interface JSONRPCResponse {
+export type JSONRPCResponse = JSONRPCSuccessResponse | JSONRPCErrorResponse;
+
+export interface JSONRPCSuccessResponse {
   jsonrpc: JSONRPC;
-  result?: any;
-  error?: JSONRPCError;
   id: JSONRPCID;
+  result: any;
+  error?: undefined;
+}
+
+export interface JSONRPCErrorResponse {
+  jsonrpc: JSONRPC;
+  id: JSONRPCID;
+  result?: undefined;
+  error: JSONRPCError;
 }
 
 export const isJSONRPCRequest = (payload: any): payload is JSONRPCRequest => {
@@ -56,7 +65,7 @@ export const createJSONRPCErrorResponse = (
   id: JSONRPCID,
   code: number,
   message: string
-): JSONRPCResponse => {
+): JSONRPCErrorResponse => {
   return {
     jsonrpc: JSONRPC,
     id,
