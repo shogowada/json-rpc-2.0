@@ -148,7 +148,7 @@ describe("JSONRPCClient", () => {
                     code: 0,
                     message: "bar",
                   },
-                };
+                } as any;
 
                 client.receive(response);
 
@@ -167,7 +167,7 @@ describe("JSONRPCClient", () => {
                 response = {
                   jsonrpc: JSONRPC,
                   id,
-                };
+                } as any;
 
                 client.receive(response);
 
