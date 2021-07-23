@@ -149,6 +149,28 @@ client.request("echo", { text: "Hello, World!" }, { token: "foo's token" });
 client.notify("log", { message: "Hello, World!" }, { token: "foo's token" });
 ```
 
+#### With timeout
+
+Sometimes you don't want to wait for the response indefinitely. You can use `timeout` to automatically fail the request after certain delay:
+
+```typescript
+const client = new JSONRPCClient(/* ... */);
+
+client
+  .timeout(10 * 1000) // Automatically fails if it didn't get a response within 10 sec
+  .request("echo", { text: "Hello, World!" });
+
+// Create a custom error response
+const createTimeoutJSONRPCErrorResponse = (
+  id: JSONRPCID
+): JSONRPCErrorResponse =>
+  createJSONRPCErrorResponse(id, 123, "Custom error message");
+
+client
+  .timeout(10 * 1000, createTimeoutJSONRPCErrorResponse)
+  .request("echo", { text: "Hello, World!" });
+```
+
 ### Bi-directional JSON-RPC
 
 For bi-directional JSON-RPC, use `JSONRPCServerAndClient`.

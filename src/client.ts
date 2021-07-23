@@ -1,6 +1,7 @@
 import {
   createJSONRPCErrorResponse,
   JSONRPC,
+  JSONRPCErrorResponse,
   JSONRPCID,
   JSONRPCParams,
   JSONRPCRequest,
@@ -58,15 +59,19 @@ export class JSONRPCClient<ClientParams = void>
     }
   }
 
-  timeout(delay: number): JSONRPCRequester<ClientParams> {
+  timeout(
+    delay: number,
+    overrideCreateJSONRPCErrorResponse: (
+      id: JSONRPCID
+    ) => JSONRPCErrorResponse = (id: JSONRPCID): JSONRPCErrorResponse =>
+      createJSONRPCErrorResponse(id, DefaultErrorCode, "Request timeout")
+  ): JSONRPCRequester<ClientParams> {
     const timeoutRequest = (id: JSONRPCID, request: () => PromiseLike<any>) => {
       const timeoutID = setTimeout(() => {
         const resolve: Resolve | undefined = this.idToResolveMap.get(id);
         if (resolve) {
           this.idToResolveMap.delete(id);
-          resolve(
-            createJSONRPCErrorResponse(id, DefaultErrorCode, "Request timeout")
-          );
+          resolve(overrideCreateJSONRPCErrorResponse(id));
         }
       }, delay);
 

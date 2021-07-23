@@ -1,7 +1,16 @@
 import { describe, beforeEach, it } from "mocha";
 import { expect } from "chai";
 import * as sinon from "sinon";
-import { JSONRPCClient, JSONRPC, JSONRPCResponse, JSONRPCRequest } from ".";
+import {
+  JSONRPCClient,
+  JSONRPC,
+  JSONRPCResponse,
+  JSONRPCRequest,
+  JSONRPCID,
+  JSONRPCErrorResponse,
+  createJSONRPCErrorResponse,
+  JSONRPCError,
+} from ".";
 
 interface ClientParams {
   token: string;
@@ -365,6 +374,59 @@ describe("JSONRPCClient", () => {
           it("should respond", async () => {
             const actual: JSONRPCResponse = await promise;
             expect(actual).to.deep.equal(result);
+          });
+        });
+      });
+
+      describe("requesting with custom timeout error response", () => {
+        let delay: number;
+        let fakeTimers: sinon.SinonFakeTimers;
+        let errorCode: number;
+        let errorMessage: string;
+        let errorData: string;
+        let promise: PromiseLike<JSONRPCResponse>;
+
+        beforeEach(() => {
+          fakeTimers = sinon.useFakeTimers();
+          delay = 1000;
+
+          errorCode = 123;
+          errorMessage = "Custom error message";
+          errorData = "Custom error data";
+
+          promise = client
+            .timeout(
+              delay,
+              (id: JSONRPCID): JSONRPCErrorResponse =>
+                createJSONRPCErrorResponse(
+                  id,
+                  errorCode,
+                  errorMessage,
+                  errorData
+                )
+            )
+            .requestAdvanced({
+              jsonrpc: JSONRPC,
+              id: ++id,
+              method: "foo",
+            });
+
+          resolve!();
+        });
+
+        describe("timing out", () => {
+          beforeEach(() => {
+            fakeTimers.tick(delay);
+          });
+
+          it("should reject with the custom error", async () => {
+            const actual: JSONRPCResponse = await promise;
+            const expected: JSONRPCError = {
+              code: errorCode,
+              message: errorMessage,
+              data: errorData,
+            };
+            expect(actual.error).to.deep.equal(expected);
           });
         });
       });
