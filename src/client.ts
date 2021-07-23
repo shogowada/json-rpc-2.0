@@ -6,7 +6,7 @@ import {
   JSONRPCRequest,
   JSONRPCResponse,
 } from "./models";
-import { createLogDeprecationWarning } from "./internal";
+import { createLogDeprecationWarning, DefaultErrorCode } from "./internal";
 
 export type SendRequest<ClientParams> = (
   payload: any,
@@ -25,7 +25,20 @@ Do this:         new JSONRPCClient((jsonRPCClient, clientParams) => /* no change
 The old way still works, but we will drop the support in the future.`
 );
 
-export class JSONRPCClient<ClientParams = void> {
+export interface JSONRPCRequester<ClientParams> {
+  request: (
+    method: string,
+    params?: JSONRPCParams,
+    clientParams?: ClientParams
+  ) => PromiseLike<any>;
+  requestAdvanced: (
+    request: JSONRPCRequest,
+    clientParams?: ClientParams
+  ) => PromiseLike<JSONRPCResponse>;
+}
+
+export class JSONRPCClient<ClientParams = void>
+  implements JSONRPCRequester<ClientParams> {
   private idToResolveMap: IDToDeferredMap;
   private id: number;
 
@@ -45,16 +58,68 @@ export class JSONRPCClient<ClientParams = void> {
     }
   }
 
+  timeout(delay: number): JSONRPCRequester<ClientParams> {
+    const timeoutRequest = (id: JSONRPCID, request: () => PromiseLike<any>) => {
+      const timeoutID = setTimeout(() => {
+        const resolve: Resolve | undefined = this.idToResolveMap.get(id);
+        if (resolve) {
+          createJSONRPCErrorResponse(id, DefaultErrorCode, "Request timeout");
+        }
+      }, delay);
+
+      return request().then(
+        (result) => {
+          clearTimeout(timeoutID);
+          return result;
+        },
+        (error) => {
+          clearTimeout(timeoutID);
+          return Promise.reject(error);
+        }
+      );
+    };
+
+    return {
+      request: (
+        method: string,
+        params?: JSONRPCParams,
+        clientParams?: ClientParams
+      ): PromiseLike<any> => {
+        const id: JSONRPCID = this._createID();
+        return timeoutRequest(id, () =>
+          this.requestWithID(method, params, clientParams, id)
+        );
+      },
+      requestAdvanced: (
+        request: JSONRPCRequest,
+        clientParams?: ClientParams
+      ): PromiseLike<JSONRPCResponse> => {
+        return timeoutRequest(request.id!, () =>
+          this.requestAdvanced(request, clientParams)
+        );
+      },
+    };
+  }
+
   request(
     method: string,
     params?: JSONRPCParams,
     clientParams?: ClientParams
   ): PromiseLike<any> {
+    return this.requestWithID(method, params, clientParams, this._createID());
+  }
+
+  private requestWithID(
+    method: string,
+    params: JSONRPCParams | undefined,
+    clientParams: ClientParams | undefined,
+    id: JSONRPCID
+  ): PromiseLike<any> {
     const request: JSONRPCRequest = {
       jsonrpc: JSONRPC,
       method,
       params,
-      id: this._createID(),
+      id,
     };
 
     return this.requestAdvanced(request, clientParams).then((response) => {
@@ -81,7 +146,7 @@ export class JSONRPCClient<ClientParams = void> {
         this.receive(
           createJSONRPCErrorResponse(
             request.id!,
-            0,
+            DefaultErrorCode,
             (error && error.message) || "Failed to send a request"
           )
         );
@@ -119,7 +184,7 @@ export class JSONRPCClient<ClientParams = void> {
 
   rejectAllPendingRequests(message: string): void {
     this.idToResolveMap.forEach((resolve: Resolve, id: string) =>
-      resolve(createJSONRPCErrorResponse(id, 0, message))
+      resolve(createJSONRPCErrorResponse(id, DefaultErrorCode, message))
     );
     this.idToResolveMap.clear();
   }

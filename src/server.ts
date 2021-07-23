@@ -9,7 +9,7 @@ import {
   isJSONRPCRequest,
   isJSONRPCID,
 } from "./models";
-import { createLogDeprecationWarning } from "./internal";
+import { createLogDeprecationWarning, DefaultErrorCode } from "./internal";
 
 export type SimpleJSONRPCMethod<ServerParams = void> = (
   params: Partial<JSONRPCParams> | undefined,
@@ -26,8 +26,6 @@ export type JSONRPCResponsePromise = PromiseLike<JSONRPCResponse | null>;
 type NameToMethodDictionary<ServerParams> = {
   [name: string]: JSONRPCMethod<ServerParams>;
 };
-
-const DefaultErrorCode = 0;
 
 const createParseErrorResponse = (): JSONRPCResponse =>
   createJSONRPCErrorResponse(null, JSONRPCErrorCode.ParseError, "Parse error");

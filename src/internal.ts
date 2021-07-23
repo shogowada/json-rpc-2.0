@@ -7,3 +7,5 @@ export const createLogDeprecationWarning = (message: string) => {
     }
   };
 };
+
+export const DefaultErrorCode = 0;
