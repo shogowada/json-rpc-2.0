@@ -63,7 +63,10 @@ export class JSONRPCClient<ClientParams = void>
       const timeoutID = setTimeout(() => {
         const resolve: Resolve | undefined = this.idToResolveMap.get(id);
         if (resolve) {
-          createJSONRPCErrorResponse(id, DefaultErrorCode, "Request timeout");
+          this.idToResolveMap.delete(id);
+          resolve(
+            createJSONRPCErrorResponse(id, DefaultErrorCode, "Request timeout")
+          );
         }
       }, delay);
 

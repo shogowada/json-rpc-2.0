@@ -1,5 +1,5 @@
 import { JSONRPCMethod, JSONRPCServer, SimpleJSONRPCMethod } from "./server";
-import { JSONRPCClient } from "./client";
+import { JSONRPCClient, JSONRPCRequester } from "./client";
 import {
   isJSONRPCRequest,
   isJSONRPCResponse,
@@ -20,6 +20,10 @@ export class JSONRPCServerAndClient<ServerParams = void, ClientParams = void> {
 
   addMethodAdvanced(name: string, method: JSONRPCMethod<ServerParams>): void {
     this.server.addMethodAdvanced(name, method);
+  }
+
+  timeout(delay: number): JSONRPCRequester<ClientParams> {
+    return this.client.timeout(delay);
   }
 
   request(
