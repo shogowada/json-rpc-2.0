@@ -8,6 +8,7 @@ import {
   createJSONRPCErrorResponse,
   isJSONRPCRequest,
   isJSONRPCID,
+  JSONRPCErrorResponse,
 } from "./models";
 import { createLogDeprecationWarning } from "./internal";
 
@@ -56,6 +57,11 @@ The old way still works, but we will drop the support in the future.`
 export class JSONRPCServer<ServerParams = void> {
   private nameToMethodDictionary: NameToMethodDictionary<ServerParams>;
 
+  public mapErrorToJSONRPCErrorResponse: (
+    id: JSONRPCID,
+    error: any
+  ) => JSONRPCErrorResponse = defaultMapErrorToJSONRPCErrorResponse;
+
   constructor() {
     this.nameToMethodDictionary = {};
   }
@@ -83,7 +89,10 @@ export class JSONRPCServer<ServerParams = void> {
             `JSON-RPC method ${request.method} responded an error`,
             error
           );
-          return mapErrorToJSONRPCResponse(request.id, error);
+          return this.mapErrorToJSONRPCErrorResponseIfNecessary(
+            request.id,
+            error
+          );
         }
       );
     };
@@ -148,7 +157,9 @@ export class JSONRPCServer<ServerParams = void> {
         `An unexpected error occurred while executing "${request.method}" JSON-RPC method:`,
         error
       );
-      return Promise.resolve(mapErrorToJSONRPCResponse(request.id, error));
+      return Promise.resolve(
+        this.mapErrorToJSONRPCErrorResponseIfNecessary(request.id, error)
+      );
     };
 
     try {
@@ -160,6 +171,17 @@ export class JSONRPCServer<ServerParams = void> {
       return response.then(undefined, onError);
     } catch (error) {
       return onError(error);
+    }
+  }
+
+  private mapErrorToJSONRPCErrorResponseIfNecessary(
+    id: JSONRPCID | undefined,
+    error: any
+  ): JSONRPCErrorResponse | null {
+    if (id !== undefined) {
+      return this.mapErrorToJSONRPCErrorResponse(id, error);
+    } else {
+      return null;
     }
   }
 }
@@ -179,19 +201,15 @@ const mapResultToJSONRPCResponse = (
   }
 };
 
-const mapErrorToJSONRPCResponse = (
-  id: JSONRPCID | undefined,
+const defaultMapErrorToJSONRPCErrorResponse = (
+  id: JSONRPCID,
   error: any
-): JSONRPCResponse | null => {
-  if (id !== undefined) {
-    return createJSONRPCErrorResponse(
-      id,
-      DefaultErrorCode,
-      (error && error.message) || "An unexpected error occurred"
-    );
-  } else {
-    return null;
-  }
+): JSONRPCErrorResponse => {
+  return createJSONRPCErrorResponse(
+    id,
+    DefaultErrorCode,
+    (error && error.message) || "An unexpected error occurred"
+  );
 };
 
 const mapResponse = (

@@ -201,6 +201,32 @@ client.request("fail").then(
 );
 ```
 
+If you want to return a custom error response, either use [advanced APIs](#advanced-apis) or implement `mapErrorToJSONRPCErrorResponse`:
+
+```typescript
+import {
+  createJSONRPCErrorResponse,
+  JSONRPCErrorResponse,
+  JSONRPCID,
+  JSONRPCServer,
+} from "json-rpc-2.0";
+
+const server = new JSONRPCServer();
+
+server.mapErrorToJSONRPCErrorResponse = (
+  id: JSONRPCID,
+  error: any
+): JSONRPCErrorResponse => {
+  return createJSONRPCErrorResponse(
+    id,
+    error?.code || 0,
+    error?.message || "An unexpected error occurred",
+    // Optional 4th argument. It maps to error.data of the response.
+    { foo: "bar" }
+  );
+};
+```
+
 ### Advanced APIs
 
 Use the advanced APIs to handle raw JSON-RPC messages.

@@ -1,6 +1,12 @@
 import { describe, beforeEach, it } from "mocha";
 import { expect } from "chai";
-import { JSONRPCServer, JSONRPC } from ".";
+import {
+  JSONRPCServer,
+  JSONRPC,
+  JSONRPCID,
+  JSONRPCErrorResponse,
+  createJSONRPCErrorResponse,
+} from ".";
 import { JSONRPCErrorCode, JSONRPCResponse } from "./models";
 
 describe("JSONRPCServer", () => {
@@ -270,6 +276,66 @@ describe("JSONRPCServer", () => {
 
       it("should respond an error", () => {
         expect(response.error!.code).to.equal(JSONRPCErrorCode.InvalidRequest);
+      });
+    });
+  });
+
+  describe("having a custom mapErrorToJSONRPCErrorResponse method", () => {
+    let errorMessagePrefix: string;
+    let errorData: any;
+
+    beforeEach(() => {
+      errorMessagePrefix = "Error: ";
+      errorData = {
+        foo: "bar",
+      };
+
+      server.mapErrorToJSONRPCErrorResponse = (
+        id: JSONRPCID,
+        error: any
+      ): JSONRPCErrorResponse =>
+        createJSONRPCErrorResponse(
+          id,
+          error.code,
+          `${errorMessagePrefix}${error.message}`,
+          errorData
+        );
+    });
+
+    describe("rejecting", () => {
+      let errorCode: number;
+      let errorMessage: string;
+      let response: JSONRPCResponse;
+
+      beforeEach(async () => {
+        errorCode = 123;
+        errorMessage = "test message";
+
+        server.addMethod("throw", () => {
+          const error = new Error(errorMessage);
+          (error as any).code = errorCode;
+          throw error;
+        });
+
+        response = (await server.receive({
+          jsonrpc: JSONRPC,
+          id: 0,
+          method: "throw",
+        }))!;
+      });
+
+      it("should respond a custom error code", () => {
+        expect(response.error!.code).to.equal(errorCode);
+      });
+
+      it("should respond a custom error message", () => {
+        expect(response.error!.message).to.equal(
+          `${errorMessagePrefix}${errorMessage}`
+        );
+      });
+
+      it("should respond a custom error data", () => {
+        expect(response.error!.data).to.deep.equal(errorData);
       });
     });
   });

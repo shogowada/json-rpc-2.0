@@ -14,11 +14,20 @@ export interface JSONRPCRequest {
   id?: JSONRPCID;
 }
 
-export interface JSONRPCResponse {
+export type JSONRPCResponse = JSONRPCSuccessResponse | JSONRPCErrorResponse;
+
+export interface JSONRPCSuccessResponse {
   jsonrpc: JSONRPC;
-  result?: any;
-  error?: JSONRPCError;
   id: JSONRPCID;
+  result: any;
+  error?: undefined;
+}
+
+export interface JSONRPCErrorResponse {
+  jsonrpc: JSONRPC;
+  id: JSONRPCID;
+  result?: undefined;
+  error: JSONRPCError;
 }
 
 export const isJSONRPCRequest = (payload: any): payload is JSONRPCRequest => {
@@ -55,14 +64,18 @@ export enum JSONRPCErrorCode {
 export const createJSONRPCErrorResponse = (
   id: JSONRPCID,
   code: number,
-  message: string
-): JSONRPCResponse => {
+  message: string,
+  data?: any
+): JSONRPCErrorResponse => {
+  const error: JSONRPCError = { code, message };
+
+  if (data) {
+    error.data = data;
+  }
+
   return {
     jsonrpc: JSONRPC,
     id,
-    error: {
-      code,
-      message,
-    },
+    error,
   };
 };
