@@ -1,5 +1,6 @@
 import { describe, beforeEach, it } from "mocha";
 import { expect } from "chai";
+import * as sinon from "sinon";
 import {
   JSONRPCServerAndClient,
   JSONRPCServer,
@@ -54,6 +55,10 @@ describe("JSONRPCServerAndClient", () => {
     );
 
     serverAndClient2.addMethod("echo2", ({ message }: EchoParams) => message);
+  });
+
+  afterEach(() => {
+    sinon.reset();
   });
 
   describe("requesting from server 1", () => {
@@ -139,6 +144,49 @@ describe("JSONRPCServerAndClient", () => {
           () => Promise.reject(new Error("Expected to fail")),
           (error) => expect(error.message).to.equal(message)
         );
+      });
+    });
+  });
+
+  describe("requesting with timeout", () => {
+    let fakeTimers: sinon.SinonFakeTimers;
+    let delay: number;
+    let resolve: () => void;
+    let promise: PromiseLike<any>;
+
+    beforeEach(() => {
+      fakeTimers = sinon.useFakeTimers();
+
+      delay = 100;
+      serverAndClient2.addMethod(
+        "timeout",
+        () => new Promise((givenResolve) => (resolve = givenResolve))
+      );
+
+      promise = serverAndClient1.timeout(delay).request("timeout");
+    });
+
+    describe("timing out", () => {
+      beforeEach(() => {
+        fakeTimers.tick(delay);
+        resolve();
+      });
+
+      it("should reject", () => {
+        return promise.then(
+          () => Promise.reject(new Error("Expected to fail")),
+          () => undefined
+        );
+      });
+    });
+
+    describe("not timing out", () => {
+      beforeEach(() => {
+        resolve();
+      });
+
+      it("should succeed", () => {
+        return promise;
       });
     });
   });

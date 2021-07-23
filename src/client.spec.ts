@@ -1,6 +1,16 @@
 import { describe, beforeEach, it } from "mocha";
 import { expect } from "chai";
-import { JSONRPCClient, JSONRPC, JSONRPCResponse, JSONRPCRequest } from ".";
+import * as sinon from "sinon";
+import {
+  JSONRPCClient,
+  JSONRPC,
+  JSONRPCResponse,
+  JSONRPCRequest,
+  JSONRPCID,
+  JSONRPCErrorResponse,
+  createJSONRPCErrorResponse,
+  JSONRPCError,
+} from ".";
 
 interface ClientParams {
   token: string;
@@ -45,6 +55,10 @@ describe("JSONRPCClient", () => {
           apiModel === "legacy" ? legacySend : newSend,
           () => ++id
         );
+      });
+
+      afterEach(() => {
+        sinon.reset();
       });
 
       describe("requesting", () => {
@@ -264,6 +278,156 @@ describe("JSONRPCClient", () => {
 
         it("should pass the client params to send function", () => {
           expect(lastClientParams).to.deep.equal(expected);
+        });
+      });
+
+      describe("requesting with timeout", () => {
+        let delay: number;
+        let fakeTimers: sinon.SinonFakeTimers;
+        let promise: PromiseLike<any>;
+
+        beforeEach(() => {
+          fakeTimers = sinon.useFakeTimers();
+          delay = 1000;
+
+          promise = client.timeout(delay).request("foo");
+
+          resolve!();
+        });
+
+        describe("timing out", () => {
+          beforeEach(() => {
+            fakeTimers.tick(delay);
+          });
+
+          it("should reject", () => {
+            return promise.then(
+              () => Promise.reject(new Error("Expected to fail")),
+              () => undefined
+            );
+          });
+        });
+
+        describe("not timing out", () => {
+          let result: string;
+
+          beforeEach(() => {
+            result = "foo";
+            client.receive({
+              jsonrpc: JSONRPC,
+              id: lastRequest!.id!,
+              result,
+            });
+          });
+
+          it("should respond", async () => {
+            const actual: string = await promise;
+            expect(actual).to.equal(result);
+          });
+        });
+      });
+
+      describe("requesting advanced with timeout", () => {
+        let delay: number;
+        let fakeTimers: sinon.SinonFakeTimers;
+        let promise: PromiseLike<JSONRPCResponse>;
+
+        beforeEach(() => {
+          fakeTimers = sinon.useFakeTimers();
+          delay = 1000;
+
+          promise = client.timeout(delay).requestAdvanced({
+            jsonrpc: JSONRPC,
+            id: ++id,
+            method: "foo",
+          });
+
+          resolve!();
+        });
+
+        describe("timing out", () => {
+          beforeEach(() => {
+            fakeTimers.tick(delay);
+          });
+
+          it("should reject", () => {
+            return promise.then((result) => {
+              if (!result.error) {
+                return Promise.reject(new Error("Expected to fail"));
+              }
+            });
+          });
+        });
+
+        describe("not timing out", () => {
+          let result: JSONRPCResponse;
+
+          beforeEach(() => {
+            result = {
+              jsonrpc: JSONRPC,
+              id: lastRequest!.id!,
+              result,
+            };
+            client.receive(result);
+          });
+
+          it("should respond", async () => {
+            const actual: JSONRPCResponse = await promise;
+            expect(actual).to.deep.equal(result);
+          });
+        });
+      });
+
+      describe("requesting with custom timeout error response", () => {
+        let delay: number;
+        let fakeTimers: sinon.SinonFakeTimers;
+        let errorCode: number;
+        let errorMessage: string;
+        let errorData: string;
+        let promise: PromiseLike<JSONRPCResponse>;
+
+        beforeEach(() => {
+          fakeTimers = sinon.useFakeTimers();
+          delay = 1000;
+
+          errorCode = 123;
+          errorMessage = "Custom error message";
+          errorData = "Custom error data";
+
+          promise = client
+            .timeout(
+              delay,
+              (id: JSONRPCID): JSONRPCErrorResponse =>
+                createJSONRPCErrorResponse(
+                  id,
+                  errorCode,
+                  errorMessage,
+                  errorData
+                )
+            )
+            .requestAdvanced({
+              jsonrpc: JSONRPC,
+              id: ++id,
+              method: "foo",
+            });
+
+          resolve!();
+        });
+
+        describe("timing out", () => {
+          beforeEach(() => {
+            fakeTimers.tick(delay);
+          });
+
+          it("should reject with the custom error", async () => {
+            const actual: JSONRPCResponse = await promise;
+            const expected: JSONRPCError = {
+              code: errorCode,
+              message: errorMessage,
+              data: errorData,
+            };
+            expect(actual.error).to.deep.equal(expected);
+          });
         });
       });
 
