@@ -8,6 +8,7 @@ Let your client and server talk over function calls under [JSON-RPC 2.0 spec](ht
 - No external dependencies
   - Keep your package small
   - Stay away from dependency hell
+- Works in both browser and Node.js
 - First-class TypeScript support
   - Written in TypeScript
 
