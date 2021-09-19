@@ -166,8 +166,12 @@ export class JSONRPCServer<ServerParams = void> {
     request: JSONRPCRequest,
     serverParams: ServerParams | undefined
   ): JSONRPCResponsePromise {
-    const lastMiddleware: JSONRPCServerMiddleware<ServerParams> = (
-      next: JSONRPCServerMiddlewareNext<ServerParams>,
+    // TODO: memoize combined middleware
+    const combinedMiddleware: JSONRPCServerMiddleware<ServerParams> = this.combineMiddlewares(
+      this.middlewares
+    );
+
+    const callMethod: JSONRPCServerMiddlewareNext<ServerParams> = (
       request: JSONRPCRequest,
       serverParams: ServerParams | undefined
     ): JSONRPCResponsePromise => {
@@ -193,37 +197,35 @@ export class JSONRPCServer<ServerParams = void> {
       }
     };
 
-    const combinedMiddleware: JSONRPCServerMiddleware<ServerParams> = this.combineMiddlewares(
-      [...this.middlewares, lastMiddleware]
-    );
-
-    const dummyMiddlewareNext = async () => null;
-
-    return combinedMiddleware(dummyMiddlewareNext, request, serverParams);
+    return combinedMiddleware(callMethod, request, serverParams);
   }
 
   private combineMiddlewares(
     middlewares: JSONRPCServerMiddleware<ServerParams>[]
   ): JSONRPCServerMiddleware<ServerParams> {
-    const combinedMiddlewareReducer = (
-      combinedMiddleware: JSONRPCServerMiddleware<ServerParams>,
-      middleware: JSONRPCServerMiddleware<ServerParams>
-    ): JSONRPCServerMiddleware<ServerParams> => {
-      return (
-        next: JSONRPCServerMiddlewareNext<ServerParams>,
-        request: JSONRPCRequest,
-        serverParams: ServerParams | undefined
-      ): JSONRPCResponsePromise => {
-        const thisNext: JSONRPCServerMiddlewareNext<ServerParams> = (
+    if (!middlewares.length) {
+      return (next, request, serverParams) => next(request, serverParams);
+    } else {
+      const combinedMiddlewareReducer = (
+        combinedMiddleware: JSONRPCServerMiddleware<ServerParams>,
+        middleware: JSONRPCServerMiddleware<ServerParams>
+      ): JSONRPCServerMiddleware<ServerParams> => {
+        return (
+          next: JSONRPCServerMiddlewareNext<ServerParams>,
           request: JSONRPCRequest,
           serverParams: ServerParams | undefined
-        ): JSONRPCResponsePromise => middleware(next, request, serverParams);
+        ): JSONRPCResponsePromise => {
+          const middlewareAsNext = (
+            request: JSONRPCRequest,
+            serverParams: ServerParams | undefined
+          ) => middleware(next, request, serverParams);
 
-        return combinedMiddleware(thisNext, request, serverParams);
+          return combinedMiddleware(middlewareAsNext, request, serverParams);
+        };
       };
-    };
 
-    return middlewares.reduce(combinedMiddlewareReducer);
+      return middlewares.reduce(combinedMiddlewareReducer);
+    }
   }
 
   private mapErrorToJSONRPCErrorResponseIfNecessary(

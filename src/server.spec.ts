@@ -11,6 +11,11 @@ import {
 } from ".";
 import { JSONRPCErrorCode, JSONRPCResponse } from "./models";
 
+const itIsNotImplementedYet = () =>
+  it("not implemented yet", () => {
+    throw new Error("not implemented yet");
+  });
+
 describe("JSONRPCServer", () => {
   interface ServerParams {
     userID: string;
@@ -456,6 +461,22 @@ describe("JSONRPCServer", () => {
           });
         });
       });
+
+      describe("using another middleware", () => {
+        itIsNotImplementedYet();
+      });
+    });
+
+    describe("using a middleware that changes request", () => {
+      itIsNotImplementedYet();
+    });
+
+    describe("using a middleware that changes server params", () => {
+      itIsNotImplementedYet();
+    });
+
+    describe("using a middleware that changes response", () => {
+      itIsNotImplementedYet();
     });
   });
 });
