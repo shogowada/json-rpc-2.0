@@ -64,7 +64,7 @@ The old way still works, but we will drop the support in the future.`
 
 export class JSONRPCServer<ServerParams = void> {
   private nameToMethodDictionary: NameToMethodDictionary<ServerParams>;
-  private middlewares: JSONRPCServerMiddleware<ServerParams>[];
+  private middleware: JSONRPCServerMiddleware<ServerParams> | null;
 
   public mapErrorToJSONRPCErrorResponse: (
     id: JSONRPCID,
@@ -73,7 +73,7 @@ export class JSONRPCServer<ServerParams = void> {
 
   constructor() {
     this.nameToMethodDictionary = {};
-    this.middlewares = [];
+    this.middleware = null;
   }
 
   addMethod(name: string, method: SimpleJSONRPCMethod<ServerParams>): void {
@@ -158,7 +158,14 @@ export class JSONRPCServer<ServerParams = void> {
   }
 
   applyMiddleware(middlewares: JSONRPCServerMiddleware<ServerParams>[]): void {
-    this.middlewares = [...this.middlewares, ...middlewares];
+    if (this.middleware) {
+      this.middleware = this.combineMiddlewares([
+        this.middleware,
+        ...middlewares,
+      ]);
+    } else {
+      this.middleware = this.combineMiddlewares(middlewares);
+    }
   }
 
   private callMethod(
@@ -166,11 +173,6 @@ export class JSONRPCServer<ServerParams = void> {
     request: JSONRPCRequest,
     serverParams: ServerParams | undefined
   ): JSONRPCResponsePromise {
-    // TODO: memoize combined middleware
-    const combinedMiddleware: JSONRPCServerMiddleware<ServerParams> = this.combineMiddlewares(
-      this.middlewares
-    );
-
     const callMethod: JSONRPCServerMiddlewareNext<ServerParams> = (
       request: JSONRPCRequest,
       serverParams: ServerParams | undefined
@@ -195,10 +197,11 @@ export class JSONRPCServer<ServerParams = void> {
     };
 
     try {
-      return combinedMiddleware(callMethod, request, serverParams).then(
-        undefined,
-        onError
-      );
+      return (this.middleware || noopMiddleware)(
+        callMethod,
+        request,
+        serverParams
+      ).then(undefined, onError);
     } catch (error) {
       return onError(error);
     }
@@ -208,7 +211,7 @@ export class JSONRPCServer<ServerParams = void> {
     middlewares: JSONRPCServerMiddleware<ServerParams>[]
   ): JSONRPCServerMiddleware<ServerParams> {
     if (!middlewares.length) {
-      return (next, request, serverParams) => next(request, serverParams);
+      return noopMiddleware;
     } else {
       const combinedMiddlewareReducer = (
         combinedMiddleware: JSONRPCServerMiddleware<ServerParams>,
@@ -243,6 +246,12 @@ export class JSONRPCServer<ServerParams = void> {
     }
   }
 }
+
+const noopMiddleware: JSONRPCServerMiddleware<any> = (
+  next,
+  request,
+  serverParams
+) => next(request, serverParams);
 
 const mapResultToJSONRPCResponse = (
   id: JSONRPCID | undefined,

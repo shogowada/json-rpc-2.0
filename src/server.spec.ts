@@ -11,11 +11,6 @@ import {
 } from ".";
 import { JSONRPCErrorCode, JSONRPCResponse } from "./models";
 
-const itIsNotImplementedYet = () =>
-  it("not implemented yet", () => {
-    throw new Error("not implemented yet");
-  });
-
 describe("JSONRPCServer", () => {
   interface ServerParams {
     userID: string;
