@@ -463,20 +463,143 @@ describe("JSONRPCServer", () => {
       });
 
       describe("using another middleware", () => {
-        itIsNotImplementedYet();
+        let secondMiddlewareCalled: boolean;
+
+        beforeEach(() => {
+          secondMiddlewareCalled = false;
+
+          server.applyMiddleware([
+            (next, request, serverParams) => {
+              secondMiddlewareCalled = true;
+              return next(request, serverParams);
+            },
+          ]);
+        });
+
+        describe("requesting", () => {
+          beforeEach(() => {
+            server.receive({
+              jsonrpc: JSONRPC,
+              id: 0,
+              method: methodName,
+              params: {},
+            });
+          });
+
+          it("should call the first middleware", () => {
+            expect(middlewareCalled).to.be.true;
+          });
+
+          it("should call the second middleware", () => {
+            expect(secondMiddlewareCalled).to.be.true;
+          });
+        });
       });
     });
 
-    describe("using a middleware that changes request", () => {
-      itIsNotImplementedYet();
-    });
+    describe("using a middleware that changes request and server params", () => {
+      let changedParams: any;
+      let changedServerParams: ServerParams;
 
-    describe("using a middleware that changes server params", () => {
-      itIsNotImplementedYet();
+      beforeEach(() => {
+        changedParams = {
+          foo: "bar",
+        };
+        changedServerParams = {
+          userID: "changed user ID",
+        };
+
+        server.applyMiddleware([
+          (next, request) => {
+            return next(
+              {
+                ...request,
+                params: changedParams,
+              },
+              changedServerParams
+            );
+          },
+        ]);
+      });
+
+      describe("requesting", () => {
+        let givenRequest: JSONRPCRequest;
+
+        beforeEach(() => {
+          givenRequest = {
+            jsonrpc: JSONRPC,
+            id: 0,
+            method: methodName,
+            params: {
+              foo: "foo",
+            },
+          };
+
+          server.receive(givenRequest);
+
+          returnFromMethod();
+
+          return consumeAllEvents();
+        });
+
+        it("should change the request", () => {
+          let expectedRequest: JSONRPCRequest = {
+            ...givenRequest,
+            params: changedParams,
+          };
+          expect(receivedRequest).to.deep.equal(expectedRequest);
+        });
+
+        it("should change the server params", () => {
+          expect(receivedServerParams).to.deep.equal(changedServerParams);
+        });
+      });
     });
 
     describe("using a middleware that changes response", () => {
-      itIsNotImplementedYet();
+      let changedResponse: JSONRPCResponse;
+
+      beforeEach(() => {
+        server.applyMiddleware([
+          (next, request, serverParams) => {
+            return next(request, serverParams).then(
+              (response): JSONRPCResponse => {
+                changedResponse = {
+                  jsonrpc: JSONRPC,
+                  id: response!.id,
+                  result: {
+                    foo: new Date().toString(),
+                  },
+                };
+                return changedResponse;
+              }
+            );
+          },
+        ]);
+      });
+
+      describe("requesting", () => {
+        let actualResponse: JSONRPCResponse;
+
+        beforeEach(() => {
+          server
+            .receive({
+              jsonrpc: JSONRPC,
+              id: 0,
+              method: methodName,
+              params: {},
+            })
+            .then((response) => (actualResponse = response!));
+
+          returnFromMethod();
+
+          return consumeAllEvents();
+        });
+
+        it("should return the changed response", () => {
+          expect(actualResponse).to.deep.equal(changedResponse);
+        });
+      });
     });
   });
 });

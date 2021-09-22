@@ -175,29 +175,33 @@ export class JSONRPCServer<ServerParams = void> {
       request: JSONRPCRequest,
       serverParams: ServerParams | undefined
     ): JSONRPCResponsePromise => {
-      const onError = (error: any): JSONRPCResponsePromise => {
-        console.warn(
-          `An unexpected error occurred while executing "${request.method}" JSON-RPC method:`,
-          error
-        );
-        return Promise.resolve(
-          this.mapErrorToJSONRPCErrorResponseIfNecessary(request.id, error)
-        );
-      };
-
-      try {
-        let response = method(request, serverParams);
-        if (typeof response === "function") {
-          logHigherOrderFunctionDeprecationWarning();
-          response = response(serverParams);
-        }
-        return response.then(undefined, onError);
-      } catch (error) {
-        return onError(error);
+      let response = method(request, serverParams);
+      if (typeof response === "function") {
+        logHigherOrderFunctionDeprecationWarning();
+        return response(serverParams);
+      } else {
+        return response;
       }
     };
 
-    return combinedMiddleware(callMethod, request, serverParams);
+    const onError = (error: any): JSONRPCResponsePromise => {
+      console.warn(
+        `An unexpected error occurred while executing "${request.method}" JSON-RPC method:`,
+        error
+      );
+      return Promise.resolve(
+        this.mapErrorToJSONRPCErrorResponseIfNecessary(request.id, error)
+      );
+    };
+
+    try {
+      return combinedMiddleware(callMethod, request, serverParams).then(
+        undefined,
+        onError
+      );
+    } catch (error) {
+      return onError(error);
+    }
   }
 
   private combineMiddlewares(
