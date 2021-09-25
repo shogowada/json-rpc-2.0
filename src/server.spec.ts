@@ -1,15 +1,16 @@
-import { describe, beforeEach, it } from "mocha";
+import { beforeEach, describe, it } from "mocha";
 import { expect } from "chai";
 import {
-  JSONRPCServer,
-  JSONRPC,
-  JSONRPCID,
-  JSONRPCErrorResponse,
   createJSONRPCErrorResponse,
+  JSONRPC,
+  JSONRPCErrorCode,
+  JSONRPCErrorResponse,
+  JSONRPCID,
   JSONRPCRequest,
+  JSONRPCResponse,
+  JSONRPCServer,
   JSONRPCServerMiddlewareNext,
 } from ".";
-import { JSONRPCErrorCode, JSONRPCResponse } from "./models";
 
 describe("JSONRPCServer", () => {
   interface ServerParams {
@@ -349,6 +350,7 @@ describe("JSONRPCServer", () => {
     let receivedServerParams: ServerParams;
     let returnedResponse: JSONRPCResponse;
     let returnFromMethod: () => void;
+    let throwFromMethod: (error: any) => void;
 
     beforeEach(() => {
       methodName = "foo";
@@ -362,7 +364,7 @@ describe("JSONRPCServer", () => {
           receivedRequest = request;
           receivedServerParams = serverParams;
 
-          return new Promise<JSONRPCResponse>((resolve) => {
+          return new Promise<JSONRPCResponse>((resolve, reject) => {
             returnedResponse = {
               id: request.id!,
               jsonrpc: JSONRPC,
@@ -373,6 +375,10 @@ describe("JSONRPCServer", () => {
 
             returnFromMethod = () => {
               resolve(returnedResponse);
+            };
+
+            throwFromMethod = (error) => {
+              reject(error);
             };
           });
         }
@@ -593,6 +599,55 @@ describe("JSONRPCServer", () => {
 
         it("should return the changed response", () => {
           expect(actualResponse).to.deep.equal(changedResponse);
+        });
+      });
+    });
+
+    describe("using middleware that catches exception", () => {
+      beforeEach(() => {
+        server.applyMiddleware([
+          async (next, request, serverParams) => {
+            try {
+              return await next(request, serverParams);
+            } catch (error) {
+              return createJSONRPCErrorResponse(
+                request.id!,
+                error.code || JSONRPCErrorCode.InternalError,
+                error.message
+              );
+            }
+          },
+        ]);
+      });
+
+      describe("throwing", () => {
+        let error: any;
+        let actualResponse: JSONRPCResponse;
+
+        beforeEach(() => {
+          server
+            .receive({
+              jsonrpc: JSONRPC,
+              id: 0,
+              method: methodName,
+              params: {},
+            })
+            .then((response) => (actualResponse = response!));
+
+          error = { code: 123, message: "test" };
+
+          throwFromMethod(error);
+
+          return consumeAllEvents();
+        });
+
+        it("should catch the exception on middleware", () => {
+          const expected: JSONRPCErrorResponse = createJSONRPCErrorResponse(
+            0,
+            error.code,
+            error.message
+          );
+          expect(actualResponse).to.deep.equal(expected);
         });
       });
     });
