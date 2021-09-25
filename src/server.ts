@@ -215,26 +215,26 @@ export class JSONRPCServer<ServerParams = void> {
     if (!middlewares.length) {
       return noopMiddleware;
     } else {
-      const combinedMiddlewareReducer = (
-        combinedMiddleware: JSONRPCServerMiddleware<ServerParams>,
-        middleware: JSONRPCServerMiddleware<ServerParams>
-      ): JSONRPCServerMiddleware<ServerParams> => {
-        return (
-          next: JSONRPCServerMiddlewareNext<ServerParams>,
-          request: JSONRPCRequest,
-          serverParams: ServerParams | undefined
-        ): JSONRPCResponsePromise => {
-          const middlewareAsNext = (
-            request: JSONRPCRequest,
-            serverParams: ServerParams | undefined
-          ) => middleware(next, request, serverParams);
-
-          return combinedMiddleware(middlewareAsNext, request, serverParams);
-        };
-      };
-
-      return middlewares.reduce(combinedMiddlewareReducer);
+      return middlewares.reduce(this.combinedMiddlewareReducer);
     }
+  }
+
+  private combinedMiddlewareReducer(
+    combinedMiddleware: JSONRPCServerMiddleware<ServerParams>,
+    middleware: JSONRPCServerMiddleware<ServerParams>
+  ): JSONRPCServerMiddleware<ServerParams> {
+    return (
+      next: JSONRPCServerMiddlewareNext<ServerParams>,
+      request: JSONRPCRequest,
+      serverParams: ServerParams | undefined
+    ): JSONRPCResponsePromise => {
+      const middlewareAsNext = (
+        request: JSONRPCRequest,
+        serverParams: ServerParams | undefined
+      ) => middleware(next, request, serverParams);
+
+      return combinedMiddleware(middlewareAsNext, request, serverParams);
+    };
   }
 
   private mapErrorToJSONRPCErrorResponseIfNecessary(
