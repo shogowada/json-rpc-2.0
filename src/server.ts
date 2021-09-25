@@ -157,7 +157,9 @@ export class JSONRPCServer<ServerParams = void> {
     }
   }
 
-  applyMiddleware(middlewares: JSONRPCServerMiddleware<ServerParams>[]): void {
+  applyMiddleware(
+    ...middlewares: JSONRPCServerMiddleware<ServerParams>[]
+  ): void {
     if (this.middleware) {
       this.middleware = this.combineMiddlewares([
         this.middleware,

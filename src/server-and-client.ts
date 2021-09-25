@@ -20,9 +20,9 @@ export class JSONRPCServerAndClient<ServerParams = void, ClientParams = void> {
   ) {}
 
   applyServerMiddleware(
-    middlewares: JSONRPCServerMiddleware<ServerParams>[]
+    ...middlewares: JSONRPCServerMiddleware<ServerParams>[]
   ): void {
-    this.server.applyMiddleware(middlewares);
+    this.server.applyMiddleware(...middlewares);
   }
 
   addMethod(name: string, method: SimpleJSONRPCMethod<ServerParams>): void {

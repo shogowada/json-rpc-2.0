@@ -393,7 +393,7 @@ describe("JSONRPCServer", () => {
         middlewareCalled = false;
         nextReturned = false;
 
-        server.applyMiddleware([
+        server.applyMiddleware(
           (
             next: JSONRPCServerMiddlewareNext<ServerParams>,
             request: JSONRPCRequest,
@@ -404,8 +404,8 @@ describe("JSONRPCServer", () => {
               nextReturned = true;
               return result;
             });
-          },
-        ]);
+          }
+        );
       });
 
       describe("requesting", () => {
@@ -469,12 +469,10 @@ describe("JSONRPCServer", () => {
         beforeEach(() => {
           secondMiddlewareCalled = false;
 
-          server.applyMiddleware([
-            (next, request, serverParams) => {
-              secondMiddlewareCalled = true;
-              return next(request, serverParams);
-            },
-          ]);
+          server.applyMiddleware((next, request, serverParams) => {
+            secondMiddlewareCalled = true;
+            return next(request, serverParams);
+          });
         });
 
         describe("requesting", () => {
@@ -510,17 +508,15 @@ describe("JSONRPCServer", () => {
           userID: "changed user ID",
         };
 
-        server.applyMiddleware([
-          (next, request) => {
-            return next(
-              {
-                ...request,
-                params: changedParams,
-              },
-              changedServerParams
-            );
-          },
-        ]);
+        server.applyMiddleware((next, request) => {
+          return next(
+            {
+              ...request,
+              params: changedParams,
+            },
+            changedServerParams
+          );
+        });
       });
 
       describe("requesting", () => {
@@ -561,22 +557,20 @@ describe("JSONRPCServer", () => {
       let changedResponse: JSONRPCResponse;
 
       beforeEach(() => {
-        server.applyMiddleware([
-          (next, request, serverParams) => {
-            return next(request, serverParams).then(
-              (response): JSONRPCResponse => {
-                changedResponse = {
-                  jsonrpc: JSONRPC,
-                  id: response!.id,
-                  result: {
-                    foo: new Date().toString(),
-                  },
-                };
-                return changedResponse;
-              }
-            );
-          },
-        ]);
+        server.applyMiddleware((next, request, serverParams) => {
+          return next(request, serverParams).then(
+            (response): JSONRPCResponse => {
+              changedResponse = {
+                jsonrpc: JSONRPC,
+                id: response!.id,
+                result: {
+                  foo: new Date().toString(),
+                },
+              };
+              return changedResponse;
+            }
+          );
+        });
       });
 
       describe("requesting", () => {
@@ -605,19 +599,17 @@ describe("JSONRPCServer", () => {
 
     describe("using middleware that catches exception", () => {
       beforeEach(() => {
-        server.applyMiddleware([
-          async (next, request, serverParams) => {
-            try {
-              return await next(request, serverParams);
-            } catch (error) {
-              return createJSONRPCErrorResponse(
-                request.id!,
-                error.code || JSONRPCErrorCode.InternalError,
-                error.message
-              );
-            }
-          },
-        ]);
+        server.applyMiddleware(async (next, request, serverParams) => {
+          try {
+            return await next(request, serverParams);
+          } catch (error) {
+            return createJSONRPCErrorResponse(
+              request.id!,
+              error.code || JSONRPCErrorCode.InternalError,
+              error.message
+            );
+          }
+        });
       });
 
       describe("throwing", () => {

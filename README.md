@@ -116,7 +116,8 @@ const exceptionMiddleware = async (next, request, serverParams) => {
   }
 };
 
-server.applyMiddleware([logMiddleware, exceptionMiddleware]);
+// Middleware will be called in the same order they are applied
+server.applyMiddleware(logMiddleware, exceptionMiddleware);
 ```
 
 ### Client
