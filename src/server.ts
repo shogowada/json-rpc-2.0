@@ -24,6 +24,16 @@ export type JSONRPCMethod<ServerParams = void> = (
   | ((serverParams: ServerParams | undefined) => JSONRPCResponsePromise);
 export type JSONRPCResponsePromise = PromiseLike<JSONRPCResponse | null>;
 
+export type JSONRPCServerMiddlewareNext<ServerParams> = (
+  request: JSONRPCRequest,
+  serverParams: ServerParams | undefined
+) => JSONRPCResponsePromise;
+export type JSONRPCServerMiddleware<ServerParams> = (
+  next: JSONRPCServerMiddlewareNext<ServerParams>,
+  request: JSONRPCRequest,
+  serverParams: ServerParams | undefined
+) => JSONRPCResponsePromise;
+
 type NameToMethodDictionary<ServerParams> = {
   [name: string]: JSONRPCMethod<ServerParams>;
 };
@@ -54,6 +64,7 @@ The old way still works, but we will drop the support in the future.`
 
 export class JSONRPCServer<ServerParams = void> {
   private nameToMethodDictionary: NameToMethodDictionary<ServerParams>;
+  private middleware: JSONRPCServerMiddleware<ServerParams> | null;
 
   public mapErrorToJSONRPCErrorResponse: (
     id: JSONRPCID,
@@ -62,6 +73,7 @@ export class JSONRPCServer<ServerParams = void> {
 
   constructor() {
     this.nameToMethodDictionary = {};
+    this.middleware = null;
   }
 
   addMethod(name: string, method: SimpleJSONRPCMethod<ServerParams>): void {
@@ -145,11 +157,64 @@ export class JSONRPCServer<ServerParams = void> {
     }
   }
 
+  applyMiddleware(
+    ...middlewares: JSONRPCServerMiddleware<ServerParams>[]
+  ): void {
+    if (this.middleware) {
+      this.middleware = this.combineMiddlewares([
+        this.middleware,
+        ...middlewares,
+      ]);
+    } else {
+      this.middleware = this.combineMiddlewares(middlewares);
+    }
+  }
+
+  private combineMiddlewares(
+    middlewares: JSONRPCServerMiddleware<ServerParams>[]
+  ): JSONRPCServerMiddleware<ServerParams> | null {
+    if (!middlewares.length) {
+      return null;
+    } else {
+      return middlewares.reduce(this.middlewareReducer);
+    }
+  }
+
+  private middlewareReducer(
+    prevMiddleware: JSONRPCServerMiddleware<ServerParams>,
+    nextMiddleware: JSONRPCServerMiddleware<ServerParams>
+  ): JSONRPCServerMiddleware<ServerParams> {
+    return (
+      next: JSONRPCServerMiddlewareNext<ServerParams>,
+      request: JSONRPCRequest,
+      serverParams: ServerParams | undefined
+    ): JSONRPCResponsePromise => {
+      return prevMiddleware(
+        (request, serverParams) => nextMiddleware(next, request, serverParams),
+        request,
+        serverParams
+      );
+    };
+  }
+
   private callMethod(
     method: JSONRPCMethod<ServerParams>,
     request: JSONRPCRequest,
     serverParams: ServerParams | undefined
   ): JSONRPCResponsePromise {
+    const callMethod: JSONRPCServerMiddlewareNext<ServerParams> = (
+      request: JSONRPCRequest,
+      serverParams: ServerParams | undefined
+    ): JSONRPCResponsePromise => {
+      let response = method(request, serverParams);
+      if (typeof response === "function") {
+        logHigherOrderFunctionDeprecationWarning();
+        return response(serverParams);
+      } else {
+        return response;
+      }
+    };
+
     const onError = (error: any): JSONRPCResponsePromise => {
       console.warn(
         `An unexpected error occurred while executing "${request.method}" JSON-RPC method:`,
@@ -161,12 +226,11 @@ export class JSONRPCServer<ServerParams = void> {
     };
 
     try {
-      let response = method(request, serverParams);
-      if (typeof response === "function") {
-        logHigherOrderFunctionDeprecationWarning();
-        response = response(serverParams);
-      }
-      return response.then(undefined, onError);
+      return (this.middleware || noopMiddleware)(
+        callMethod,
+        request,
+        serverParams
+      ).then(undefined, onError);
     } catch (error) {
       return onError(error);
     }
@@ -183,6 +247,12 @@ export class JSONRPCServer<ServerParams = void> {
     }
   }
 }
+
+const noopMiddleware: JSONRPCServerMiddleware<any> = (
+  next,
+  request,
+  serverParams
+) => next(request, serverParams);
 
 const mapResultToJSONRPCResponse = (
   id: JSONRPCID | undefined,

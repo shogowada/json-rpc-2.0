@@ -58,7 +58,7 @@ describe("JSONRPCServerAndClient", () => {
   });
 
   afterEach(() => {
-    sinon.reset();
+    sinon.restore();
   });
 
   describe("requesting from server 1", () => {

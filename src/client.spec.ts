@@ -58,7 +58,7 @@ describe("JSONRPCClient", () => {
       });
 
       afterEach(() => {
-        sinon.reset();
+        sinon.restore();
       });
 
       describe("requesting", () => {

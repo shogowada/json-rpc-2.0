@@ -1,4 +1,9 @@
-import { JSONRPCMethod, JSONRPCServer, SimpleJSONRPCMethod } from "./server";
+import {
+  JSONRPCMethod,
+  JSONRPCServer,
+  JSONRPCServerMiddleware,
+  SimpleJSONRPCMethod,
+} from "./server";
 import { JSONRPCClient, JSONRPCRequester } from "./client";
 import {
   isJSONRPCRequest,
@@ -13,6 +18,12 @@ export class JSONRPCServerAndClient<ServerParams = void, ClientParams = void> {
     public server: JSONRPCServer<ServerParams>,
     public client: JSONRPCClient<ClientParams>
   ) {}
+
+  applyServerMiddleware(
+    ...middlewares: JSONRPCServerMiddleware<ServerParams>[]
+  ): void {
+    this.server.applyMiddleware(...middlewares);
+  }
 
   addMethod(name: string, method: SimpleJSONRPCMethod<ServerParams>): void {
     this.server.addMethod(name, method);
