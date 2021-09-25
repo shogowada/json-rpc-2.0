@@ -172,9 +172,9 @@ export class JSONRPCServer<ServerParams = void> {
 
   private combineMiddlewares(
     middlewares: JSONRPCServerMiddleware<ServerParams>[]
-  ): JSONRPCServerMiddleware<ServerParams> {
+  ): JSONRPCServerMiddleware<ServerParams> | null {
     if (!middlewares.length) {
-      return noopMiddleware;
+      return null;
     } else {
       return middlewares.reduce(this.middlewareReducer);
     }
