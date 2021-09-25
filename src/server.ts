@@ -170,6 +170,33 @@ export class JSONRPCServer<ServerParams = void> {
     }
   }
 
+  private combineMiddlewares(
+    middlewares: JSONRPCServerMiddleware<ServerParams>[]
+  ): JSONRPCServerMiddleware<ServerParams> {
+    if (!middlewares.length) {
+      return noopMiddleware;
+    } else {
+      return middlewares.reduce(this.middlewareReducer);
+    }
+  }
+
+  private middlewareReducer(
+    prevMiddleware: JSONRPCServerMiddleware<ServerParams>,
+    nextMiddleware: JSONRPCServerMiddleware<ServerParams>
+  ): JSONRPCServerMiddleware<ServerParams> {
+    return (
+      next: JSONRPCServerMiddlewareNext<ServerParams>,
+      request: JSONRPCRequest,
+      serverParams: ServerParams | undefined
+    ): JSONRPCResponsePromise => {
+      return prevMiddleware(
+        (request, serverParams) => nextMiddleware(next, request, serverParams),
+        request,
+        serverParams
+      );
+    };
+  }
+
   private callMethod(
     method: JSONRPCMethod<ServerParams>,
     request: JSONRPCRequest,
@@ -207,34 +234,6 @@ export class JSONRPCServer<ServerParams = void> {
     } catch (error) {
       return onError(error);
     }
-  }
-
-  private combineMiddlewares(
-    middlewares: JSONRPCServerMiddleware<ServerParams>[]
-  ): JSONRPCServerMiddleware<ServerParams> {
-    if (!middlewares.length) {
-      return noopMiddleware;
-    } else {
-      return middlewares.reduce(this.combinedMiddlewareReducer);
-    }
-  }
-
-  private combinedMiddlewareReducer(
-    combinedMiddleware: JSONRPCServerMiddleware<ServerParams>,
-    middleware: JSONRPCServerMiddleware<ServerParams>
-  ): JSONRPCServerMiddleware<ServerParams> {
-    return (
-      next: JSONRPCServerMiddlewareNext<ServerParams>,
-      request: JSONRPCRequest,
-      serverParams: ServerParams | undefined
-    ): JSONRPCResponsePromise => {
-      const middlewareAsNext = (
-        request: JSONRPCRequest,
-        serverParams: ServerParams | undefined
-      ) => middleware(next, request, serverParams);
-
-      return combinedMiddleware(middlewareAsNext, request, serverParams);
-    };
   }
 
   private mapErrorToJSONRPCErrorResponseIfNecessary(

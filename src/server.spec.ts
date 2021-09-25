@@ -643,6 +643,43 @@ describe("JSONRPCServer", () => {
         });
       });
     });
+
+    describe("using multiple middleware", () => {
+      let count: number;
+      let first: number;
+      let second: number;
+      let third: number;
+
+      beforeEach(() => {
+        count = 0;
+        server.applyMiddleware(
+          (next, request, serverParams) => {
+            first = ++count;
+            return next(request, serverParams);
+          },
+          (next, request, serverParams) => {
+            second = ++count;
+            return next(request, serverParams);
+          },
+          (next, request, serverParams) => {
+            third = ++count;
+            return next(request, serverParams);
+          }
+        );
+
+        server.receive({
+          jsonrpc: JSONRPC,
+          id: 0,
+          method: methodName,
+        });
+
+        return consumeAllEvents();
+      });
+
+      it("should call middleware in the applied order", () => {
+        expect([first, second, third]).to.deep.equal([1, 2, 3]);
+      });
+    });
   });
 });
 
