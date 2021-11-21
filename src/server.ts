@@ -118,8 +118,9 @@ export class JSONRPCServer<ServerParams = void> {
   receiveJSON(
     json: string,
     serverParams?: ServerParams
-  ): JSONRPCResponsePromise {
-    const request: JSONRPCRequest | null = this.tryParseRequestJSON(json);
+  ): PromiseLike<JSONRPCResponse | JSONRPCResponse[] | null> {
+    const request: JSONRPCRequest | JSONRPCRequest[] | null =
+      this.tryParseRequestJSON(json);
     if (request) {
       return this.receive(request, serverParams);
     } else {
@@ -136,6 +137,50 @@ export class JSONRPCServer<ServerParams = void> {
   }
 
   receive(
+    request: JSONRPCRequest,
+    serverParams?: ServerParams
+  ): PromiseLike<JSONRPCResponse | null>;
+  receive(
+    request: JSONRPCRequest | JSONRPCRequest[],
+    serverParams?: ServerParams
+  ): PromiseLike<JSONRPCResponse | JSONRPCResponse[] | null>;
+  receive(
+    request: JSONRPCRequest | JSONRPCRequest[],
+    serverParams?: ServerParams
+  ): PromiseLike<JSONRPCResponse | JSONRPCResponse[] | null> {
+    if (Array.isArray(request)) {
+      return this.receiveMultiple(request, serverParams);
+    } else {
+      return this.receiveSingle(request, serverParams);
+    }
+  }
+
+  private receiveMultiple(
+    requests: JSONRPCRequest[],
+    serverParams?: ServerParams
+  ): PromiseLike<JSONRPCResponse | JSONRPCResponse[] | null> {
+    return Promise.all(
+      requests.map((request) => this.receiveSingle(request, serverParams))
+    )
+      .then((responses: (JSONRPCResponse | null)[]): JSONRPCResponse[] =>
+        responses.filter(isNonNull)
+      )
+      .then(
+        (
+          responses: JSONRPCResponse[]
+        ): JSONRPCResponse[] | JSONRPCResponse | null => {
+          if (responses.length === 1) {
+            return responses[0];
+          } else if (responses.length) {
+            return responses;
+          } else {
+            return null;
+          }
+        }
+      );
+  }
+
+  private receiveSingle(
     request: JSONRPCRequest,
     serverParams?: ServerParams
   ): JSONRPCResponsePromise {
@@ -247,6 +292,8 @@ export class JSONRPCServer<ServerParams = void> {
     }
   }
 }
+
+const isNonNull = <T>(value: T | null): value is T => value !== null;
 
 const noopMiddleware: JSONRPCServerMiddleware<any> = (
   next,

@@ -27,19 +27,24 @@ The old way still works, but we will drop the support in the future.`
 );
 
 export interface JSONRPCRequester<ClientParams> {
-  request: (
+  request(
     method: string,
     params?: JSONRPCParams,
     clientParams?: ClientParams
-  ) => PromiseLike<any>;
-  requestAdvanced: (
+  ): PromiseLike<any>;
+  requestAdvanced(
     request: JSONRPCRequest,
     clientParams?: ClientParams
-  ) => PromiseLike<JSONRPCResponse>;
+  ): PromiseLike<JSONRPCResponse>;
+  requestAdvanced(
+    request: JSONRPCRequest[],
+    clientParams?: ClientParams
+  ): PromiseLike<JSONRPCResponse[]>;
 }
 
 export class JSONRPCClient<ClientParams = void>
-  implements JSONRPCRequester<ClientParams> {
+  implements JSONRPCRequester<ClientParams>
+{
   private idToResolveMap: IDToDeferredMap;
   private id: number;
 
@@ -66,13 +71,18 @@ export class JSONRPCClient<ClientParams = void>
     ) => JSONRPCErrorResponse = (id: JSONRPCID): JSONRPCErrorResponse =>
       createJSONRPCErrorResponse(id, DefaultErrorCode, "Request timeout")
   ): JSONRPCRequester<ClientParams> {
-    const timeoutRequest = (id: JSONRPCID, request: () => PromiseLike<any>) => {
+    const timeoutRequest = (
+      ids: JSONRPCID[],
+      request: () => PromiseLike<any>
+    ) => {
       const timeoutID = setTimeout(() => {
-        const resolve: Resolve | undefined = this.idToResolveMap.get(id);
-        if (resolve) {
-          this.idToResolveMap.delete(id);
-          resolve(overrideCreateJSONRPCErrorResponse(id));
-        }
+        ids.forEach((id) => {
+          const resolve: Resolve | undefined = this.idToResolveMap.get(id);
+          if (resolve) {
+            this.idToResolveMap.delete(id);
+            resolve(overrideCreateJSONRPCErrorResponse(id));
+          }
+        });
       }, delay);
 
       return request().then(
@@ -87,6 +97,18 @@ export class JSONRPCClient<ClientParams = void>
       );
     };
 
+    const requestAdvanced = (
+      request: JSONRPCRequest | JSONRPCRequest[],
+      clientParams?: ClientParams
+    ): PromiseLike<JSONRPCResponse | JSONRPCResponse[]> => {
+      const ids: JSONRPCID[] = (!Array.isArray(request) ? [request] : request)
+        .map((request) => request.id)
+        .filter(isDefinedAndNonNull);
+      return timeoutRequest(ids, () =>
+        this.requestAdvanced(request as any, clientParams)
+      );
+    };
+
     return {
       request: (
         method: string,
@@ -94,18 +116,14 @@ export class JSONRPCClient<ClientParams = void>
         clientParams?: ClientParams
       ): PromiseLike<any> => {
         const id: JSONRPCID = this._createID();
-        return timeoutRequest(id, () =>
+        return timeoutRequest([id], () =>
           this.requestWithID(method, params, clientParams, id)
         );
       },
       requestAdvanced: (
-        request: JSONRPCRequest,
+        request: any,
         clientParams?: ClientParams
-      ): PromiseLike<JSONRPCResponse> => {
-        return timeoutRequest(request.id!, () =>
-          this.requestAdvanced(request, clientParams)
-        );
-      },
+      ): PromiseLike<any> => requestAdvanced(request, clientParams),
     };
   }
 
@@ -144,20 +162,53 @@ export class JSONRPCClient<ClientParams = void>
   requestAdvanced(
     request: JSONRPCRequest,
     clientParams?: ClientParams
-  ): PromiseLike<JSONRPCResponse> {
-    const promise: PromiseLike<JSONRPCResponse> = new Promise((resolve) =>
-      this.idToResolveMap.set(request.id!, resolve)
+  ): PromiseLike<JSONRPCResponse>;
+  requestAdvanced(
+    request: JSONRPCRequest[],
+    clientParams?: ClientParams
+  ): PromiseLike<JSONRPCResponse[]>;
+  requestAdvanced(
+    requests: JSONRPCRequest | JSONRPCRequest[],
+    clientParams?: ClientParams
+  ): PromiseLike<JSONRPCResponse | JSONRPCResponse[]> {
+    const areRequestsOriginallyArray = Array.isArray(requests);
+    if (!Array.isArray(requests)) {
+      requests = [requests];
+    }
+
+    const requestsWithID: JSONRPCRequest[] = requests.filter((request) =>
+      isDefinedAndNonNull(request.id)
     );
-    return this.send(request, clientParams).then(
+
+    const promises: PromiseLike<JSONRPCResponse>[] = requestsWithID.map(
+      (request) =>
+        new Promise((resolve) => this.idToResolveMap.set(request.id!, resolve))
+    );
+
+    const promise: PromiseLike<JSONRPCResponse | JSONRPCResponse[]> =
+      Promise.all(promises).then((responses: JSONRPCResponse[]) => {
+        if (areRequestsOriginallyArray || !responses.length) {
+          return responses;
+        } else {
+          return responses[0];
+        }
+      });
+
+    return this.send(
+      areRequestsOriginallyArray ? requests : requests[0],
+      clientParams
+    ).then(
       () => promise,
       (error) => {
-        this.receive(
-          createJSONRPCErrorResponse(
-            request.id!,
-            DefaultErrorCode,
-            (error && error.message) || "Failed to send a request"
-          )
-        );
+        requestsWithID.forEach((request) => {
+          this.receive(
+            createJSONRPCErrorResponse(
+              request.id!,
+              DefaultErrorCode,
+              (error && error.message) || "Failed to send a request"
+            )
+          );
+        });
         return promise;
       }
     );
@@ -197,11 +248,20 @@ export class JSONRPCClient<ClientParams = void>
     this.idToResolveMap.clear();
   }
 
-  receive(response: JSONRPCResponse): void {
-    const resolve = this.idToResolveMap.get(response.id);
-    if (resolve) {
-      this.idToResolveMap.delete(response.id);
-      resolve(response);
+  receive(responses: JSONRPCResponse | JSONRPCResponse[]): void {
+    if (!Array.isArray(responses)) {
+      responses = [responses];
     }
+
+    responses.forEach((response) => {
+      const resolve = this.idToResolveMap.get(response.id);
+      if (resolve) {
+        this.idToResolveMap.delete(response.id);
+        resolve(response);
+      }
+    });
   }
 }
+
+const isDefinedAndNonNull = <T>(value: T | null | undefined): value is T =>
+  value !== undefined && value !== null;

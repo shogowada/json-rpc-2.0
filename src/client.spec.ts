@@ -33,11 +33,11 @@ describe("JSONRPCClient", () => {
         resolve = undefined;
         reject = undefined;
 
-        const legacySend = (request: JSONRPCRequest) => (
-          clientParams: ClientParams
-        ): PromiseLike<void> => {
-          return newSend(request, clientParams);
-        };
+        const legacySend =
+          (request: JSONRPCRequest) =>
+          (clientParams: ClientParams): PromiseLike<void> => {
+            return newSend(request, clientParams);
+          };
 
         const newSend = (
           request: JSONRPCRequest,
@@ -265,6 +265,39 @@ describe("JSONRPCClient", () => {
           it("should reject the promise", () => {
             expect(error.message).to.equal("Failed to send a request");
           });
+        });
+      });
+
+      describe("requesting batch", () => {
+        let requests: JSONRPCRequest[];
+        let actualResponses: JSONRPCResponse[];
+        let expectedResponses: JSONRPCResponse[];
+
+        beforeEach(() => {
+          requests = [
+            { jsonrpc: JSONRPC, id: 0, method: "foo" },
+            { jsonrpc: JSONRPC, id: 1, method: "foo2" },
+          ];
+
+          client
+            .requestAdvanced(requests)
+            .then((responses) => (actualResponses = responses));
+
+          resolve!();
+
+          expectedResponses = [
+            { jsonrpc: JSONRPC, id: 0, result: "foo" },
+            { jsonrpc: JSONRPC, id: 1, result: "foo2" },
+          ];
+          client.receive(expectedResponses);
+        });
+
+        it("should send requests in batch", () => {
+          expect(lastRequest).to.deep.equal(requests);
+        });
+
+        it("should return responses", () => {
+          expect(actualResponses).to.deep.equal(expectedResponses);
         });
       });
 
