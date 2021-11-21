@@ -141,7 +141,7 @@ export class JSONRPCServer<ServerParams = void> {
     serverParams?: ServerParams
   ): PromiseLike<JSONRPCResponse | null>;
   receive(
-    request: JSONRPCRequest[],
+    request: JSONRPCRequest | JSONRPCRequest[],
     serverParams?: ServerParams
   ): PromiseLike<JSONRPCResponse | JSONRPCResponse[] | null>;
   receive(

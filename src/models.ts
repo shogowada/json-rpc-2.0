@@ -39,12 +39,24 @@ export const isJSONRPCRequest = (payload: any): payload is JSONRPCRequest => {
   );
 };
 
+export const isJSONRPCRequests = (
+  payload: any
+): payload is JSONRPCRequest[] => {
+  return Array.isArray(payload) && payload.every(isJSONRPCRequest);
+};
+
 export const isJSONRPCResponse = (payload: any): payload is JSONRPCResponse => {
   return (
     payload.jsonrpc === JSONRPC &&
     payload.id !== undefined &&
     (payload.result !== undefined || payload.error !== undefined)
   );
+};
+
+export const isJSONRPCResponses = (
+  payload: any
+): payload is JSONRPCResponse[] => {
+  return Array.isArray(payload) && payload.every(isJSONRPCResponse);
 };
 
 export interface JSONRPCError {

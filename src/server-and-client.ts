@@ -7,7 +7,9 @@ import {
 import { JSONRPCClient, JSONRPCRequester } from "./client";
 import {
   isJSONRPCRequest,
+  isJSONRPCRequests,
   isJSONRPCResponse,
+  isJSONRPCResponses,
   JSONRPCParams,
   JSONRPCRequest,
   JSONRPCResponse,
@@ -48,8 +50,16 @@ export class JSONRPCServerAndClient<ServerParams = void, ClientParams = void> {
   requestAdvanced(
     jsonRPCRequest: JSONRPCRequest,
     clientParams?: ClientParams
-  ): PromiseLike<JSONRPCResponse> {
-    return this.client.requestAdvanced(jsonRPCRequest, clientParams);
+  ): PromiseLike<JSONRPCResponse>;
+  requestAdvanced(
+    jsonRPCRequest: JSONRPCRequest[],
+    clientParams?: ClientParams
+  ): PromiseLike<JSONRPCResponse[]>;
+  requestAdvanced(
+    jsonRPCRequest: JSONRPCRequest | JSONRPCRequest[],
+    clientParams?: ClientParams
+  ): PromiseLike<JSONRPCResponse | JSONRPCResponse[]> {
+    return this.client.requestAdvanced(jsonRPCRequest as any, clientParams);
   }
 
   notify(
@@ -69,13 +79,11 @@ export class JSONRPCServerAndClient<ServerParams = void, ClientParams = void> {
     serverParams?: ServerParams,
     clientParams?: ClientParams
   ): Promise<void> {
-    if (isJSONRPCResponse(payload)) {
+    if (isJSONRPCResponse(payload) || isJSONRPCResponses(payload)) {
       this.client.receive(payload);
-    } else if (isJSONRPCRequest(payload)) {
-      const response: JSONRPCResponse | null = await this.server.receive(
-        payload,
-        serverParams
-      );
+    } else if (isJSONRPCRequest(payload) || isJSONRPCRequests(payload)) {
+      const response: JSONRPCResponse | JSONRPCResponse[] | null =
+        await this.server.receive(payload, serverParams);
       if (response) {
         return this.client.send(response, clientParams);
       }

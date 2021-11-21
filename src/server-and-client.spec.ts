@@ -103,6 +103,26 @@ describe("JSONRPCServerAndClient", () => {
     });
   });
 
+  describe("requesting in batch", () => {
+    let responses: JSONRPCResponse[];
+
+    beforeEach(async () => {
+      const requests: JSONRPCRequest[] = [
+        { jsonrpc: JSONRPC, id: 0, method: "echo2", params: { message: "1" } },
+        { jsonrpc: JSONRPC, id: 1, method: "echo2", params: { message: "2" } },
+      ];
+
+      responses = await serverAndClient1.requestAdvanced(requests);
+    });
+
+    it("should return responses", () => {
+      expect(responses).to.deep.equal([
+        { jsonrpc: JSONRPC, id: 0, result: "1" },
+        { jsonrpc: JSONRPC, id: 1, result: "2" },
+      ]);
+    });
+  });
+
   describe("receiving invalid JSON-RPC message", () => {
     let promise: PromiseLike<void>;
 
