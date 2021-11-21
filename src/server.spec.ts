@@ -41,11 +41,10 @@ describe("JSONRPCServer", () => {
     ["legacy", "new"].forEach((apiModel) => {
       describe(`using ${apiModel} API`, () => {
         beforeEach(() => {
-          const legacyMethod = (params: Params) => (
-            serverParams: ServerParams
-          ) => {
-            return newMethod(params, serverParams);
-          };
+          const legacyMethod =
+            (params: Params) => (serverParams: ServerParams) => {
+              return newMethod(params, serverParams);
+            };
 
           const newMethod = ({ text }: Params, serverParams: ServerParams) => {
             if (serverParams) {
@@ -94,7 +93,9 @@ describe("JSONRPCServer", () => {
                 }),
                 { userID: "bar" }
               )
-              .then((givenResponse) => (response = givenResponse));
+              .then(
+                (givenResponse: JSONRPCResponse) => (response = givenResponse)
+              );
           });
 
           it("should echo the text with the user ID", () => {
@@ -254,7 +255,9 @@ describe("JSONRPCServer", () => {
       let response: JSONRPCResponse;
 
       beforeEach(async () => {
-        response = (await server.receiveJSON(invalidJSON as any))!;
+        response = (await server.receiveJSON(
+          invalidJSON as any
+        )) as JSONRPCResponse;
       });
 
       it("should respond an error", () => {
@@ -678,6 +681,77 @@ describe("JSONRPCServer", () => {
 
       it("should call middleware in the applied order", () => {
         expect([first, second, third]).to.deep.equal([1, 2, 3]);
+      });
+    });
+  });
+
+  describe("receiving batch requests", () => {
+    let responses: JSONRPCResponse[] | JSONRPCResponse | null;
+
+    beforeEach(() => {
+      server.addMethod("echo", ({ message }: { message: string }) => message);
+    });
+
+    describe("of 3 requests", () => {
+      beforeEach(async () => {
+        responses = await server.receive([
+          { jsonrpc: JSONRPC, id: 0, method: "echo", params: { message: "1" } },
+          { jsonrpc: JSONRPC, id: 1, method: "echo", params: { message: "2" } },
+          { jsonrpc: JSONRPC, id: 2, method: "echo", params: { message: "3" } },
+        ]);
+      });
+
+      it("should return 3 responses", () => {
+        expect(
+          (responses as JSONRPCResponse[]).map((response) => response.result)
+        ).to.deep.equal(["1", "2", "3"]);
+      });
+    });
+
+    describe("of 1 request", () => {
+      beforeEach(async () => {
+        responses = await server.receive([
+          { jsonrpc: JSONRPC, id: 0, method: "echo", params: { message: "1" } },
+        ]);
+      });
+
+      it("should return 1 response", () => {
+        expect((responses as JSONRPCResponse).result).to.equal("1");
+      });
+    });
+
+    describe("of notifications", () => {
+      beforeEach(async () => {
+        responses = await server.receive([
+          { jsonrpc: JSONRPC, method: "echo", params: { message: "1" } },
+        ]);
+      });
+
+      it("should return null", () => {
+        expect(responses).to.be.null;
+      });
+    });
+
+    describe("of a valid and an invalid request", () => {
+      beforeEach(async () => {
+        responses = await server.receive([
+          1 as any,
+          { jsonrpc: JSONRPC, id: 0, method: "echo", params: { message: "1" } },
+        ]);
+      });
+
+      it("should return a failure and a success response", () => {
+        expect(responses).to.deep.equal([
+          {
+            jsonrpc: JSONRPC,
+            id: null,
+            error: {
+              code: JSONRPCErrorCode.InvalidRequest,
+              message: "Invalid Request",
+            },
+          },
+          { jsonrpc: JSONRPC, id: 0, result: "1" },
+        ]);
       });
     });
   });

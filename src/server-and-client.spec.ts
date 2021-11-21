@@ -123,7 +123,7 @@ describe("JSONRPCServerAndClient", () => {
     let resolve: () => void;
     beforeEach(() => {
       serverAndClient2.addMethod("hang", () => {
-        return new Promise((givenResolve) => (resolve = givenResolve));
+        return new Promise<void>((givenResolve) => (resolve = givenResolve));
       });
 
       promise = serverAndClient1.request("hang");
@@ -160,7 +160,7 @@ describe("JSONRPCServerAndClient", () => {
       delay = 100;
       serverAndClient2.addMethod(
         "timeout",
-        () => new Promise((givenResolve) => (resolve = givenResolve))
+        () => new Promise<void>((givenResolve) => (resolve = givenResolve))
       );
 
       promise = serverAndClient1.timeout(delay).request("timeout");
