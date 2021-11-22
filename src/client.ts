@@ -7,24 +7,17 @@ import {
   JSONRPCRequest,
   JSONRPCResponse,
 } from "./models";
-import { createLogDeprecationWarning, DefaultErrorCode } from "./internal";
+import { DefaultErrorCode } from "./internal";
 
 export type SendRequest<ClientParams> = (
   payload: any,
   clientParams: ClientParams | undefined
-) => PromiseLike<void> | ((clientParams?: ClientParams) => PromiseLike<void>);
+) => PromiseLike<void>;
 export type CreateID = () => JSONRPCID;
 
 type Resolve = (response: JSONRPCResponse) => void;
 
 type IDToDeferredMap = Map<JSONRPCID, Resolve>;
-
-const logHigherOrderFunctionDeprecationWarning = createLogDeprecationWarning(
-  `Using a higher order function on JSONRPCClient send method is deprecated.
-Instead of this: new JSONRPCClient((jsonRPCClient) => (clientParams) => /* no change here */)
-Do this:         new JSONRPCClient((jsonRPCClient, clientParams) => /* no change here */)
-The old way still works, but we will drop the support in the future.`
-);
 
 export interface JSONRPCRequester<ClientParams> {
   request(
@@ -233,12 +226,7 @@ export class JSONRPCClient<ClientParams = void>
     payload: any,
     clientParams: ClientParams | undefined
   ): PromiseLike<void> {
-    let promiseOrFunction = this._send(payload, clientParams);
-    if (typeof promiseOrFunction === "function") {
-      logHigherOrderFunctionDeprecationWarning();
-      promiseOrFunction = promiseOrFunction(clientParams);
-    }
-    return promiseOrFunction;
+    return this._send(payload, clientParams);
   }
 
   rejectAllPendingRequests(message: string): void {
