@@ -142,50 +142,44 @@ export class JSONRPCServer<ServerParams = void> {
     }
   }
 
-  private receiveMultiple(
+  private async receiveMultiple(
     requests: JSONRPCRequest[],
     serverParams?: ServerParams
-  ): PromiseLike<JSONRPCResponse | JSONRPCResponse[] | null> {
-    return Promise.all(
-      requests.map((request) => this.receiveSingle(request, serverParams))
-    )
-      .then((responses: (JSONRPCResponse | null)[]): JSONRPCResponse[] =>
-        responses.filter(isNonNull)
+  ): Promise<JSONRPCResponse | JSONRPCResponse[] | null> {
+    const responses: JSONRPCResponse[] = (
+      await Promise.all(
+        requests.map((request) => this.receiveSingle(request, serverParams))
       )
-      .then(
-        (
-          responses: JSONRPCResponse[]
-        ): JSONRPCResponse[] | JSONRPCResponse | null => {
-          if (responses.length === 1) {
-            return responses[0];
-          } else if (responses.length) {
-            return responses;
-          } else {
-            return null;
-          }
-        }
-      );
+    ).filter(isNonNull);
+
+    if (responses.length === 1) {
+      return responses[0];
+    } else if (responses.length) {
+      return responses;
+    } else {
+      return null;
+    }
   }
 
-  private receiveSingle(
+  private async receiveSingle(
     request: JSONRPCRequest,
     serverParams?: ServerParams
-  ): JSONRPCResponsePromise {
+  ): Promise<JSONRPCResponse | null> {
     const method = this.nameToMethodDictionary[request.method];
 
     if (!isJSONRPCRequest(request)) {
-      return Promise.resolve(createInvalidRequestResponse(request));
+      return createInvalidRequestResponse(request);
     } else if (method) {
-      const response: JSONRPCResponsePromise = this.callMethod(
+      const response: JSONRPCResponse | null = await this.callMethod(
         method,
         request,
         serverParams
       );
-      return response.then((response) => mapResponse(request, response));
+      return mapResponse(request, response);
     } else if (request.id !== undefined) {
-      return Promise.resolve(createMethodNotFoundResponse(request.id));
+      return createMethodNotFoundResponse(request.id);
     } else {
-      return Promise.resolve(null);
+      return null;
     }
   }
 
