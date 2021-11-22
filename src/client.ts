@@ -128,12 +128,12 @@ export class JSONRPCClient<ClientParams = void>
     return this.requestWithID(method, params, clientParams, this._createID());
   }
 
-  private requestWithID(
+  private async requestWithID(
     method: string,
     params: JSONRPCParams | undefined,
     clientParams: ClientParams | undefined,
     id: JSONRPCID
-  ): PromiseLike<any> {
+  ): Promise<any> {
     const request: JSONRPCRequest = {
       jsonrpc: JSONRPC,
       method,
@@ -141,15 +141,17 @@ export class JSONRPCClient<ClientParams = void>
       id,
     };
 
-    return this.requestAdvanced(request, clientParams).then((response) => {
-      if (response.result !== undefined && !response.error) {
-        return response.result;
-      } else if (response.result === undefined && response.error) {
-        return Promise.reject(new Error(response.error.message));
-      } else {
-        return Promise.reject(new Error("An unexpected error occurred"));
-      }
-    });
+    const response: JSONRPCResponse = await this.requestAdvanced(
+      request,
+      clientParams
+    );
+    if (response.result !== undefined && !response.error) {
+      return response.result;
+    } else if (response.result === undefined && response.error) {
+      return Promise.reject(new Error(response.error.message));
+    } else {
+      return Promise.reject(new Error("An unexpected error occurred"));
+    }
   }
 
   requestAdvanced(
