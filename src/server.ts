@@ -10,7 +10,7 @@ import {
   isJSONRPCID,
   JSONRPCErrorResponse,
 } from "./models";
-import { createLogDeprecationWarning, DefaultErrorCode } from "./internal";
+import { DefaultErrorCode } from "./internal";
 
 export type SimpleJSONRPCMethod<ServerParams = void> = (
   params: Partial<JSONRPCParams> | undefined,
@@ -19,9 +19,7 @@ export type SimpleJSONRPCMethod<ServerParams = void> = (
 export type JSONRPCMethod<ServerParams = void> = (
   request: JSONRPCRequest,
   serverParams: ServerParams | undefined
-) =>
-  | JSONRPCResponsePromise
-  | ((serverParams: ServerParams | undefined) => JSONRPCResponsePromise);
+) => JSONRPCResponsePromise;
 export type JSONRPCResponsePromise = PromiseLike<JSONRPCResponse | null>;
 
 export type JSONRPCServerMiddlewareNext<ServerParams> = (
@@ -55,13 +53,6 @@ const createMethodNotFoundResponse = (id: JSONRPCID): JSONRPCResponse =>
     "Method not found"
   );
 
-const logHigherOrderFunctionDeprecationWarning = createLogDeprecationWarning(
-  `Using a higher order function on JSONRPCServer.addMethod/addMethodAdvanced is deprecated.
-Instead of this: jsonRPCServer.addMethod(methodName, (params) => (serverParams) => /* no change here */)
-Do this:         jsonRPCServer.addMethod(methodName, (params, serverParams) => /* no change here */)
-The old way still works, but we will drop the support in the future.`
-);
-
 export class JSONRPCServer<ServerParams = void> {
   private nameToMethodDictionary: NameToMethodDictionary<ServerParams>;
   private middleware: JSONRPCServerMiddleware<ServerParams> | null;
@@ -87,11 +78,7 @@ export class JSONRPCServer<ServerParams = void> {
       request: JSONRPCRequest,
       serverParams: ServerParams
     ): JSONRPCResponsePromise => {
-      let response = method(request.params, serverParams);
-      if (typeof response === "function") {
-        logHigherOrderFunctionDeprecationWarning();
-        response = response(serverParams);
-      }
+      const response = method(request.params, serverParams);
       return Promise.resolve(response).then(
         (result: any) => mapResultToJSONRPCResponse(request.id, result),
         (error: any) => {
@@ -251,13 +238,7 @@ export class JSONRPCServer<ServerParams = void> {
       request: JSONRPCRequest,
       serverParams: ServerParams | undefined
     ): JSONRPCResponsePromise => {
-      let response = method(request, serverParams);
-      if (typeof response === "function") {
-        logHigherOrderFunctionDeprecationWarning();
-        return response(serverParams);
-      } else {
-        return response;
-      }
+      return method(request, serverParams);
     };
 
     const onError = (error: any): JSONRPCResponsePromise => {

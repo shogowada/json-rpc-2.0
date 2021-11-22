@@ -38,73 +38,59 @@ describe("JSONRPCServer", () => {
   describe("having an echo method", () => {
     type Params = { text: string };
 
-    ["legacy", "new"].forEach((apiModel) => {
-      describe(`using ${apiModel} API`, () => {
-        beforeEach(() => {
-          const legacyMethod =
-            (params: Params) => (serverParams: ServerParams) => {
-              return newMethod(params, serverParams);
-            };
+    beforeEach(() => {
+      const echoMethod = ({ text }: Params, serverParams: ServerParams) => {
+        if (serverParams) {
+          return `${serverParams.userID} said ${text}`;
+        } else {
+          return text;
+        }
+      };
 
-          const newMethod = ({ text }: Params, serverParams: ServerParams) => {
-            if (serverParams) {
-              return `${serverParams.userID} said ${text}`;
-            } else {
-              return text;
-            }
-          };
+      server.addMethod("echo", echoMethod);
+    });
 
-          server.addMethod(
-            "echo",
-            apiModel === "legacy" ? legacyMethod : newMethod
-          );
+    describe("receiving a request to the method", () => {
+      beforeEach(() => {
+        return server
+          .receive({
+            jsonrpc: JSONRPC,
+            id: 0,
+            method: "echo",
+            params: { text: "foo" },
+          })
+          .then((givenResponse) => (response = givenResponse));
+      });
+
+      it("should echo the text", () => {
+        expect(response).to.deep.equal({
+          jsonrpc: JSONRPC,
+          id: 0,
+          result: "foo",
         });
+      });
+    });
 
-        describe("receiving a request to the method", () => {
-          beforeEach(() => {
-            return server
-              .receive({
-                jsonrpc: JSONRPC,
-                id: 0,
-                method: "echo",
-                params: { text: "foo" },
-              })
-              .then((givenResponse) => (response = givenResponse));
-          });
-
-          it("should echo the text", () => {
-            expect(response).to.deep.equal({
+    describe("receiving a request to the method with user ID", () => {
+      beforeEach(() => {
+        return server
+          .receiveJSON(
+            JSON.stringify({
               jsonrpc: JSONRPC,
               id: 0,
-              result: "foo",
-            });
-          });
-        });
+              method: "echo",
+              params: { text: "foo" },
+            }),
+            { userID: "bar" }
+          )
+          .then((givenResponse: JSONRPCResponse) => (response = givenResponse));
+      });
 
-        describe("receiving a request to the method with user ID", () => {
-          beforeEach(() => {
-            return server
-              .receiveJSON(
-                JSON.stringify({
-                  jsonrpc: JSONRPC,
-                  id: 0,
-                  method: "echo",
-                  params: { text: "foo" },
-                }),
-                { userID: "bar" }
-              )
-              .then(
-                (givenResponse: JSONRPCResponse) => (response = givenResponse)
-              );
-          });
-
-          it("should echo the text with the user ID", () => {
-            expect(response).to.deep.equal({
-              jsonrpc: JSONRPC,
-              id: 0,
-              result: "bar said foo",
-            });
-          });
+      it("should echo the text with the user ID", () => {
+        expect(response).to.deep.equal({
+          jsonrpc: JSONRPC,
+          id: 0,
+          result: "bar said foo",
         });
       });
     });
