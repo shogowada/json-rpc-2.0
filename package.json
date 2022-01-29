@@ -33,7 +33,7 @@
     "@types/sinon": "^10.0.4",
     "chai": "^4.3.4",
     "del-cli": "^3.0.1",
-    "mocha": "^9.1.2",
+    "mocha": "^9.2.0",
     "prettier": "^2.4.1",
     "pretty-quick": "^3.1.1",
     "sinon": "^10.0.0",
