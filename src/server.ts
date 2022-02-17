@@ -9,6 +9,7 @@ import {
   isJSONRPCRequest,
   isJSONRPCID,
   JSONRPCErrorResponse,
+  ErrorListener,
 } from "./models";
 import { DefaultErrorCode } from "./internal";
 
@@ -53,18 +54,24 @@ const createMethodNotFoundResponse = (id: JSONRPCID): JSONRPCResponse =>
     "Method not found"
   );
 
+export interface JSONRPCServerOptions {
+  errorListener?: ErrorListener;
+}
+
 export class JSONRPCServer<ServerParams = void> {
   private nameToMethodDictionary: NameToMethodDictionary<ServerParams>;
   private middleware: JSONRPCServerMiddleware<ServerParams> | null;
+  private readonly errorListener: ErrorListener;
 
   public mapErrorToJSONRPCErrorResponse: (
     id: JSONRPCID,
     error: any
   ) => JSONRPCErrorResponse = defaultMapErrorToJSONRPCErrorResponse;
 
-  constructor() {
+  constructor(options: JSONRPCServerOptions = {}) {
     this.nameToMethodDictionary = {};
     this.middleware = null;
+    this.errorListener = options.errorListener ?? console.warn;
   }
 
   addMethod(name: string, method: SimpleJSONRPCMethod<ServerParams>): void {
@@ -226,7 +233,7 @@ export class JSONRPCServer<ServerParams = void> {
     };
 
     const onError = (error: any): JSONRPCResponsePromise => {
-      console.warn(
+      this.errorListener(
         `An unexpected error occurred while executing "${request.method}" JSON-RPC method:`,
         error
       );

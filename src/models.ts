@@ -91,3 +91,5 @@ export const createJSONRPCErrorResponse = (
     error,
   };
 };
+
+export type ErrorListener = (message: string, data: unknown) => void;

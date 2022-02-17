@@ -121,6 +121,18 @@ const exceptionMiddleware = async (next, request, serverParams) => {
 server.applyMiddleware(logMiddleware, exceptionMiddleware);
 ```
 
+#### Constructor Options
+
+Optionally, you can pass options to `JSONRPCServer` constructor:
+
+```typescript
+new JSONRPCServer({
+  errorListener: (message: string, data: unknown): void => {
+    // Listen to error here. By default, it will use console.warn to log errors.
+  },
+});
+```
+
 ### Client
 
 ```javascript
@@ -240,6 +252,18 @@ serverAndClient.addMethod("echo", ({ text }) => text);
 serverAndClient
   .request("add", { x: 1, y: 2 })
   .then((result) => console.log(`1 + 2 = ${result}`));
+```
+
+#### Constructor Options
+
+Optionally, you can pass options to `JSONRPCServerAndClient` constructor:
+
+```typescript
+new JSONRPCServerAndClient(server, client, {
+  errorListener: (message: string, data: unknown): void => {
+    // Listen to error here. By default, it will use console.warn to log errors.
+  },
+});
 ```
 
 ### Error handling

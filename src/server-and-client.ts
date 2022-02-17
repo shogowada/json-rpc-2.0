@@ -6,6 +6,7 @@ import {
 } from "./server";
 import { JSONRPCClient, JSONRPCRequester } from "./client";
 import {
+  ErrorListener,
   isJSONRPCRequest,
   isJSONRPCRequests,
   isJSONRPCResponse,
@@ -15,11 +16,20 @@ import {
   JSONRPCResponse,
 } from "./models";
 
+export interface JSONRPCServerAndClientOptions {
+  errorListener?: ErrorListener;
+}
+
 export class JSONRPCServerAndClient<ServerParams = void, ClientParams = void> {
+  private readonly errorListener: ErrorListener;
+
   constructor(
     public server: JSONRPCServer<ServerParams>,
-    public client: JSONRPCClient<ClientParams>
-  ) {}
+    public client: JSONRPCClient<ClientParams>,
+    options: JSONRPCServerAndClientOptions = {}
+  ) {
+    this.errorListener = options.errorListener ?? console.warn;
+  }
 
   applyServerMiddleware(
     ...middlewares: JSONRPCServerMiddleware<ServerParams>[]
@@ -89,7 +99,7 @@ export class JSONRPCServerAndClient<ServerParams = void, ClientParams = void> {
       }
     } else {
       const message = "Received an invalid JSON-RPC message";
-      console.warn(message, payload);
+      this.errorListener(message, payload);
       return Promise.reject(new Error(message));
     }
   }
