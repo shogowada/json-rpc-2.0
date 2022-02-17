@@ -79,18 +79,8 @@ export class JSONRPCServer<ServerParams = void> {
       serverParams: ServerParams
     ): JSONRPCResponsePromise => {
       const response = method(request.params, serverParams);
-      return Promise.resolve(response).then(
-        (result: any) => mapResultToJSONRPCResponse(request.id, result),
-        (error: any) => {
-          console.warn(
-            `JSON-RPC method ${request.method} responded an error`,
-            error
-          );
-          return this.mapErrorToJSONRPCErrorResponseIfNecessary(
-            request.id,
-            error
-          );
-        }
+      return Promise.resolve(response).then((result: any) =>
+        mapResultToJSONRPCResponse(request.id, result)
       );
     };
   }

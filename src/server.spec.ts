@@ -631,6 +631,36 @@ describe("JSONRPCServer", () => {
           expect(actualResponse).to.deep.equal(expected);
         });
       });
+
+      describe("throwing from non-advanced method", () => {
+        let message: string;
+        let code: number;
+        let actualResponse: JSONRPCResponse;
+
+        beforeEach(async () => {
+          message = "thrown from non-advanced method";
+          code = 456;
+
+          server.addMethod("throw", async () => {
+            throw { message, code };
+          });
+
+          actualResponse = (await server.receive({
+            jsonrpc: JSONRPC,
+            id: 0,
+            method: "throw",
+          }))!;
+        });
+
+        it("should catch the exception on middleware", () => {
+          const expected: JSONRPCErrorResponse = createJSONRPCErrorResponse(
+            0,
+            code,
+            message
+          );
+          expect(actualResponse).to.deep.equal(expected);
+        });
+      });
     });
 
     describe("using multiple middleware", () => {
