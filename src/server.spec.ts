@@ -213,7 +213,7 @@ describe("JSONRPCServer", () => {
     });
   });
 
-  describe("receiving a request to an unknown method", () => {
+  describe("receiving a request to an unknown method without default set", () => {
     beforeEach(() => {
       return server
         .receive({
@@ -232,6 +232,28 @@ describe("JSONRPCServer", () => {
           code: JSONRPCErrorCode.MethodNotFound,
           message: "Method not found",
         },
+      });
+    });
+  });
+
+  describe("receiving a request to an unknown method with default set", () => {
+    beforeEach(() => {
+      server.setDefaultMethod(() => Promise.resolve(null));
+
+      return server
+        .receive({
+          jsonrpc: JSONRPC,
+          id: 0,
+          method: "foo",
+        })
+        .then((givenResponse) => (response = givenResponse));
+    });
+
+    it("should respond null to a request", () => {
+      expect(response).to.deep.equal({
+        jsonrpc: JSONRPC,
+        id: 0,
+        result: null,
       });
     });
   });

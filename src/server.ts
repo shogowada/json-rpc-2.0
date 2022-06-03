@@ -61,6 +61,7 @@ export interface JSONRPCServerOptions {
 export class JSONRPCServer<ServerParams = void> {
   private nameToMethodDictionary: NameToMethodDictionary<ServerParams>;
   private middleware: JSONRPCServerMiddleware<ServerParams> | null;
+  private defaultMethod: JSONRPCMethod<ServerParams> | null;
   private readonly errorListener: ErrorListener;
 
   public mapErrorToJSONRPCErrorResponse: (
@@ -70,12 +71,17 @@ export class JSONRPCServer<ServerParams = void> {
 
   constructor(options: JSONRPCServerOptions = {}) {
     this.nameToMethodDictionary = {};
+    this.defaultMethod = null;
     this.middleware = null;
     this.errorListener = options.errorListener ?? console.warn;
   }
 
   addMethod(name: string, method: SimpleJSONRPCMethod<ServerParams>): void {
     this.addMethodAdvanced(name, this.toJSONRPCMethod(method));
+  }
+
+  setDefaultMethod(method: SimpleJSONRPCMethod<ServerParams>): void {
+    this.setDefaultMethodAdvanced(this.toJSONRPCMethod(method));
   }
 
   private toJSONRPCMethod(
@@ -85,7 +91,9 @@ export class JSONRPCServer<ServerParams = void> {
       request: JSONRPCRequest,
       serverParams: ServerParams
     ): JSONRPCResponsePromise => {
-      const response = method(request.params, serverParams);
+      const hasMethod = !!this.nameToMethodDictionary[request.method];
+      const response = method(hasMethod ? request.params : request, serverParams);
+
       return Promise.resolve(response).then((result: any) =>
         mapResultToJSONRPCResponse(request.id, result)
       );
@@ -97,6 +105,10 @@ export class JSONRPCServer<ServerParams = void> {
       ...this.nameToMethodDictionary,
       [name]: method,
     };
+  }
+
+  setDefaultMethodAdvanced(method: JSONRPCMethod<ServerParams>): void {
+    this.defaultMethod = method;
   }
 
   receiveJSON(
@@ -163,12 +175,20 @@ export class JSONRPCServer<ServerParams = void> {
     serverParams?: ServerParams
   ): Promise<JSONRPCResponse | null> {
     const method = this.nameToMethodDictionary[request.method];
+    const defaultMethod = this.defaultMethod;
 
     if (!isJSONRPCRequest(request)) {
       return createInvalidRequestResponse(request);
     } else if (method) {
       const response: JSONRPCResponse | null = await this.callMethod(
         method,
+        request,
+        serverParams
+      );
+      return mapResponse(request, response);
+    } else if (request.id !== undefined && defaultMethod) {
+      const response: JSONRPCResponse | null = await this.callMethod(
+        defaultMethod,
         request,
         serverParams
       );
