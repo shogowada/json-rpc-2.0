@@ -133,6 +133,18 @@ new JSONRPCServer({
 });
 ```
 
+#### Default Method
+
+Use the default method to catch methods that are not explicitly added. Unlike addMethod it provides the raw request as the first argument.
+
+```javascript
+const server = new JSONRPCServer();
+
+server.setDefaultMethod(({ method, params }) =>
+  Promise.reject(new Error(`method with name '${method}' was not found`))
+);
+```
+
 ### Client
 
 ```javascript
