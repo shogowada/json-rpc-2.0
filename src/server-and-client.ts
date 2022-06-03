@@ -41,8 +41,16 @@ export class JSONRPCServerAndClient<ServerParams = void, ClientParams = void> {
     this.server.addMethod(name, method);
   }
 
+  setDefaultMethod(method: SimpleJSONRPCMethod<ServerParams>): void {
+    this.server.setDefaultMethod(method);
+  }
+
   addMethodAdvanced(name: string, method: JSONRPCMethod<ServerParams>): void {
     this.server.addMethodAdvanced(name, method);
+  }
+
+  setDefaultMethodAdvanced(method: JSONRPCMethod<ServerParams>): void {
+    this.server.setDefaultMethodAdvanced(method);
   }
 
   timeout(delay: number): JSONRPCRequester<ClientParams> {
