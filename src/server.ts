@@ -92,7 +92,10 @@ export class JSONRPCServer<ServerParams = void> {
       serverParams: ServerParams
     ): JSONRPCResponsePromise => {
       const hasMethod = !!this.nameToMethodDictionary[request.method];
-      const response = method(hasMethod ? request.params : request, serverParams);
+      const response = method(
+        hasMethod ? request.params : request,
+        serverParams
+      );
 
       return Promise.resolve(response).then((result: any) =>
         mapResultToJSONRPCResponse(request.id, result)
@@ -174,20 +177,14 @@ export class JSONRPCServer<ServerParams = void> {
     request: JSONRPCRequest,
     serverParams?: ServerParams
   ): Promise<JSONRPCResponse | null> {
-    const method = this.nameToMethodDictionary[request.method] ?? this.defaultMethod;
+    const method =
+      this.nameToMethodDictionary[request.method] ?? this.defaultMethod;
 
     if (!isJSONRPCRequest(request)) {
       return createInvalidRequestResponse(request);
     } else if (method) {
       const response: JSONRPCResponse | null = await this.callMethod(
         method,
-        request,
-        serverParams
-      );
-      return mapResponse(request, response);
-    } else if (request.id !== undefined && defaultMethod) {
-      const response: JSONRPCResponse | null = await this.callMethod(
-        defaultMethod,
         request,
         serverParams
       );
