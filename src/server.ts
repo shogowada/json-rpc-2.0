@@ -221,16 +221,16 @@ export class JSONRPCServer<ServerParams = void> {
     request: JSONRPCRequest,
     serverParams: ServerParams | undefined
   ): JSONRPCResponsePromise {
-    const callMethod: JSONRPCServerMiddlewareNext<ServerParams> = async (
+    const callMethod: JSONRPCServerMiddlewareNext<ServerParams> = (
       request: JSONRPCRequest,
       serverParams: ServerParams | undefined
     ): JSONRPCResponsePromise => {
       if (method) {
         return method(request, serverParams);
       } else if (request.id !== undefined) {
-        return createMethodNotFoundResponse(request.id);
+        return Promise.resolve(createMethodNotFoundResponse(request.id));
       } else {
-        return null;
+        return Promise.resolve(null);
       }
     };
 
