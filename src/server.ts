@@ -174,8 +174,7 @@ export class JSONRPCServer<ServerParams = void> {
     request: JSONRPCRequest,
     serverParams?: ServerParams
   ): Promise<JSONRPCResponse | null> {
-    const method = this.nameToMethodDictionary[request.method];
-    const defaultMethod = this.defaultMethod;
+    const method = this.nameToMethodDictionary[request.method] ?? this.defaultMethod;
 
     if (!isJSONRPCRequest(request)) {
       return createInvalidRequestResponse(request);
