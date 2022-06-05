@@ -236,7 +236,7 @@ describe("JSONRPCServer", () => {
     });
   });
 
-  describe("receiving a request to an unknown method with default set", () => {
+  describe("receiving a request to an unknown method with a default method that responds null", () => {
     beforeEach(() => {
       server.setDefaultMethod(() => Promise.resolve(null));
 
