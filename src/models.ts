@@ -103,4 +103,20 @@ export const createJSONRPCSuccessResponse = (
   };
 };
 
+export const createJSONRPCRequest = (
+  method: string,
+  params?: JSONRPCParams,
+  id?: JSONRPCID
+): JSONRPCRequest => {
+  const response: JSONRPCRequest = {
+    jsonrpc: JSONRPC,
+    method,
+    params,
+  };
+
+  if (id !== undefined) response.id = id;
+
+  return response;
+};
+
 export type ErrorListener = (message: string, data: unknown) => void;
