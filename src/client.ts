@@ -1,6 +1,7 @@
 import {
   createJSONRPCErrorResponse,
   createJSONRPCRequest,
+  createJSONRPCNotification,
   JSONRPC,
   JSONRPCErrorResponse,
   JSONRPCID,
@@ -135,7 +136,7 @@ export class JSONRPCClient<ClientParams = void>
     clientParams: ClientParams | undefined,
     id: JSONRPCID
   ): Promise<any> {
-    const request: JSONRPCRequest = createJSONRPCRequest(method, params, id);
+    const request: JSONRPCRequest = createJSONRPCRequest(id, method, params);
 
     const response: JSONRPCResponse = await this.requestAdvanced(
       request,
@@ -210,7 +211,7 @@ export class JSONRPCClient<ClientParams = void>
     params?: JSONRPCParams,
     clientParams?: ClientParams
   ): void {
-    const request: JSONRPCRequest = createJSONRPCRequest(method, params);
+    const request: JSONRPCRequest = createJSONRPCNotification(method, params);
 
     this.send(request, clientParams).then(undefined, () => undefined);
   }
