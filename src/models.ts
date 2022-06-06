@@ -104,19 +104,27 @@ export const createJSONRPCSuccessResponse = (
 };
 
 export const createJSONRPCRequest = (
+  id: JSONRPCID,
   method: string,
-  params?: JSONRPCParams,
-  id?: JSONRPCID
+  params?: JSONRPCParams
 ): JSONRPCRequest => {
-  const response: JSONRPCRequest = {
+  return {
+    jsonrpc: JSONRPC,
+    id,
+    method,
+    params,
+  };
+};
+
+export const createJSONRPCNotification = (
+  method: string,
+  params?: JSONRPCParams
+): JSONRPCRequest => {
+  return {
     jsonrpc: JSONRPC,
     method,
     params,
   };
-
-  if (id !== undefined) response.id = id;
-
-  return response;
 };
 
 export type ErrorListener = (message: string, data: unknown) => void;
