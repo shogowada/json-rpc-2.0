@@ -6,9 +6,11 @@ import {
   JSONRPCID,
   JSONRPCErrorCode,
   createJSONRPCErrorResponse,
+  createJSONRPCSuccessResponse,
   isJSONRPCRequest,
   isJSONRPCID,
   JSONRPCErrorResponse,
+  JSONRPCSuccessResponse,
   ErrorListener,
 } from "./models";
 import { DefaultErrorCode } from "./internal";
@@ -278,13 +280,9 @@ const noopMiddleware: JSONRPCServerMiddleware<any> = (
 const mapResultToJSONRPCResponse = (
   id: JSONRPCID | undefined,
   result: any
-): JSONRPCResponse | null => {
+): JSONRPCSuccessResponse | null => {
   if (id !== undefined) {
-    return {
-      jsonrpc: JSONRPC,
-      id,
-      result: result === undefined ? null : result,
-    };
+    return createJSONRPCSuccessResponse(id, result);
   } else {
     return null;
   }
