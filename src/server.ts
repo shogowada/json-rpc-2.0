@@ -166,17 +166,13 @@ export class JSONRPCServer<ServerParams = void> {
 
     if (!isJSONRPCRequest(request)) {
       return createInvalidRequestResponse(request);
-    } else if (method) {
+    } else {
       const response: JSONRPCResponse | null = await this.callMethod(
         method,
         request,
         serverParams
       );
       return mapResponse(request, response);
-    } else if (request.id !== undefined) {
-      return createMethodNotFoundResponse(request.id);
-    } else {
-      return null;
     }
   }
 
@@ -221,7 +217,7 @@ export class JSONRPCServer<ServerParams = void> {
   }
 
   private callMethod(
-    method: JSONRPCMethod<ServerParams>,
+    method: JSONRPCMethod<ServerParams> | undefined,
     request: JSONRPCRequest,
     serverParams: ServerParams | undefined
   ): JSONRPCResponsePromise {
@@ -229,7 +225,13 @@ export class JSONRPCServer<ServerParams = void> {
       request: JSONRPCRequest,
       serverParams: ServerParams | undefined
     ): JSONRPCResponsePromise => {
-      return method(request, serverParams);
+      if (method) {
+        return method(request, serverParams);
+      } else if (request.id !== undefined) {
+        return Promise.resolve(createMethodNotFoundResponse(request.id));
+      } else {
+        return Promise.resolve(null);
+      }
     };
 
     const onError = (error: any): JSONRPCResponsePromise => {
