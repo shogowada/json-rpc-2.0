@@ -92,4 +92,39 @@ export const createJSONRPCErrorResponse = (
   };
 };
 
+export const createJSONRPCSuccessResponse = (
+  id: JSONRPCID,
+  result?: any
+): JSONRPCSuccessResponse => {
+  return {
+    jsonrpc: JSONRPC,
+    id,
+    result: result ?? null,
+  };
+};
+
+export const createJSONRPCRequest = (
+  id: JSONRPCID,
+  method: string,
+  params?: JSONRPCParams
+): JSONRPCRequest => {
+  return {
+    jsonrpc: JSONRPC,
+    id,
+    method,
+    params,
+  };
+};
+
+export const createJSONRPCNotification = (
+  method: string,
+  params?: JSONRPCParams
+): JSONRPCRequest => {
+  return {
+    jsonrpc: JSONRPC,
+    method,
+    params,
+  };
+};
+
 export type ErrorListener = (message: string, data: unknown) => void;
