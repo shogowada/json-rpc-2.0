@@ -37,6 +37,10 @@ export class JSONRPCServerAndClient<ServerParams = void, ClientParams = void> {
     this.server.applyMiddleware(...middlewares);
   }
 
+  hasMethod(name: string): boolean {
+    return this.server.hasMethod(name);
+  }
+
   addMethod(name: string, method: SimpleJSONRPCMethod<ServerParams>): void {
     this.server.addMethod(name, method);
   }

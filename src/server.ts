@@ -76,6 +76,10 @@ export class JSONRPCServer<ServerParams = void> {
     this.errorListener = options.errorListener ?? console.warn;
   }
 
+  hasMethod(name: string): boolean {
+    return !!this.nameToMethodDictionary[name];
+  }
+
   addMethod(name: string, method: SimpleJSONRPCMethod<ServerParams>): void {
     this.addMethodAdvanced(name, this.toJSONRPCMethod(method));
   }
