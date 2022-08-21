@@ -65,6 +65,31 @@ export interface JSONRPCErrorObject {
   data?: any;
 }
 
+export class JSONRPCError extends Error implements JSONRPCErrorObject {
+  public code: number;
+  public data?: any;
+
+  constructor(code: number, message: string, data?: any) {
+    super(message);
+
+    this.code = code;
+    this.data = data;
+  }
+
+  toObject(): JSONRPCErrorObject {
+    const obj: JSONRPCErrorObject = {
+      code: this.code,
+      message: this.message,
+    };
+
+    if (this.data) {
+      obj.data = this.data;
+    }
+
+    return obj;
+  }
+}
+
 export enum JSONRPCErrorCode {
   ParseError = -32700,
   InvalidRequest = -32600,
