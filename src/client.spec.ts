@@ -9,7 +9,7 @@ import {
   JSONRPCID,
   JSONRPCErrorResponse,
   createJSONRPCErrorResponse,
-  JSONRPCError,
+  JSONRPCErrorObject,
 } from ".";
 
 interface ClientParams {
@@ -438,7 +438,7 @@ describe("JSONRPCClient", () => {
 
       it("should reject with the custom error", async () => {
         const actual: JSONRPCResponse = await promise;
-        const expected: JSONRPCError = {
+        const expected: JSONRPCErrorObject = {
           code: errorCode,
           message: errorMessage,
           data: errorData,

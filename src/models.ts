@@ -27,7 +27,7 @@ export interface JSONRPCErrorResponse {
   jsonrpc: JSONRPC;
   id: JSONRPCID;
   result?: undefined;
-  error: JSONRPCError;
+  error: JSONRPCErrorObject;
 }
 
 export const isJSONRPCRequest = (payload: any): payload is JSONRPCRequest => {
@@ -59,7 +59,7 @@ export const isJSONRPCResponses = (
   return Array.isArray(payload) && payload.every(isJSONRPCResponse);
 };
 
-export interface JSONRPCError {
+export interface JSONRPCErrorObject {
   code: number;
   message: string;
   data?: any;
@@ -79,7 +79,7 @@ export const createJSONRPCErrorResponse = (
   message: string,
   data?: any
 ): JSONRPCErrorResponse => {
-  const error: JSONRPCError = { code, message };
+  const error: JSONRPCErrorObject = { code, message };
 
   if (data) {
     error.data = data;
