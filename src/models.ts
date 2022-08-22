@@ -72,6 +72,10 @@ export class JSONRPCError extends Error implements JSONRPCErrorObject {
   constructor(code: number, message: string, data?: any) {
     super(message);
 
+    // Manually set the prototype to fix TypeScript issue:
+    // https://github.com/Microsoft/TypeScript-wiki/blob/main/Breaking-Changes.md#extending-built-ins-like-error-array-and-map-may-no-longer-work
+    Object.setPrototypeOf(this, JSONRPCError.prototype);
+
     this.code = code;
     this.data = data;
   }
