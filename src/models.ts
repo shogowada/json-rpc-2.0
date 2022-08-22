@@ -108,16 +108,12 @@ export const createJSONRPCErrorResponse = (
   message: string,
   data?: any
 ): JSONRPCErrorResponse => {
-  const error: JSONRPCErrorObject = { code, message };
-
-  if (data) {
-    error.data = data;
-  }
+  const error: JSONRPCError = new JSONRPCError(code, message, data);
 
   return {
     jsonrpc: JSONRPC,
     id,
-    error,
+    error: error.toObject(),
   };
 };
 
