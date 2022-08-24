@@ -27,7 +27,7 @@ export interface JSONRPCErrorResponse {
   jsonrpc: JSONRPC;
   id: JSONRPCID;
   result?: undefined;
-  error: JSONRPCErrorObject;
+  error: JSONRPCError;
 }
 
 export const isJSONRPCRequest = (payload: any): payload is JSONRPCRequest => {
@@ -59,13 +59,13 @@ export const isJSONRPCResponses = (
   return Array.isArray(payload) && payload.every(isJSONRPCResponse);
 };
 
-export interface JSONRPCErrorObject {
+export interface JSONRPCError {
   code: number;
   message: string;
   data?: any;
 }
 
-export class JSONRPCError extends Error implements JSONRPCErrorObject {
+export class JSONRPCErrorException extends Error implements JSONRPCError {
   public code: number;
   public data?: any;
 
@@ -74,14 +74,14 @@ export class JSONRPCError extends Error implements JSONRPCErrorObject {
 
     // Manually set the prototype to fix TypeScript issue:
     // https://github.com/Microsoft/TypeScript-wiki/blob/main/Breaking-Changes.md#extending-built-ins-like-error-array-and-map-may-no-longer-work
-    Object.setPrototypeOf(this, JSONRPCError.prototype);
+    Object.setPrototypeOf(this, JSONRPCErrorException.prototype);
 
     this.code = code;
     this.data = data;
   }
 
-  toObject(): JSONRPCErrorObject {
-    const obj: JSONRPCErrorObject = {
+  toObject(): JSONRPCError {
+    const obj: JSONRPCError = {
       code: this.code,
       message: this.message,
     };
@@ -108,7 +108,11 @@ export const createJSONRPCErrorResponse = (
   message: string,
   data?: any
 ): JSONRPCErrorResponse => {
-  const error: JSONRPCError = new JSONRPCError(code, message, data);
+  const error: JSONRPCErrorException = new JSONRPCErrorException(
+    code,
+    message,
+    data
+  );
 
   return {
     jsonrpc: JSONRPC,

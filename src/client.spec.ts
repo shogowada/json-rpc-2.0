@@ -9,8 +9,8 @@ import {
   JSONRPCID,
   JSONRPCErrorResponse,
   createJSONRPCErrorResponse,
+  JSONRPCErrorException,
   JSONRPCError,
-  JSONRPCErrorObject,
 } from ".";
 
 interface ClientParams {
@@ -141,9 +141,9 @@ describe("JSONRPCClient", () => {
           expect(error.data).to.equal(response.error!.data);
         });
 
-        it("should reject with a JSONRPCError", () => {
+        it("should reject with a JSONRPCErrorException", () => {
           expect(error instanceof Error).to.be.true;
-          expect(error instanceof JSONRPCError).to.be.true;
+          expect(error instanceof JSONRPCErrorException).to.be.true;
           expect(error.toObject()).to.deep.equal(response.error);
         });
       });
@@ -448,7 +448,7 @@ describe("JSONRPCClient", () => {
 
       it("should reject with the custom error", async () => {
         const actual: JSONRPCResponse = await promise;
-        const expected: JSONRPCErrorObject = {
+        const expected: JSONRPCError = {
           code: errorCode,
           message: errorMessage,
           data: errorData,

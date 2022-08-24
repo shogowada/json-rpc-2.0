@@ -3,7 +3,7 @@ import {
   createJSONRPCRequest,
   createJSONRPCNotification,
   JSONRPC,
-  JSONRPCError,
+  JSONRPCErrorException,
   JSONRPCErrorCode,
   JSONRPCErrorResponse,
   JSONRPCID,
@@ -148,7 +148,7 @@ export class JSONRPCClient<ClientParams = void>
       return response.result;
     } else if (response.result === undefined && response.error) {
       return Promise.reject(
-        new JSONRPCError(
+        new JSONRPCErrorException(
           response.error.code,
           response.error.message,
           response.error.data
@@ -156,7 +156,7 @@ export class JSONRPCClient<ClientParams = void>
       );
     } else {
       return Promise.reject(
-        new JSONRPCError(
+        new JSONRPCErrorException(
           JSONRPCErrorCode.ParseError,
           "Received an invalid request"
         )
