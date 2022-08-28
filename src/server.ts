@@ -297,13 +297,9 @@ const defaultMapErrorToJSONRPCErrorResponse = (
   id: JSONRPCID,
   error: any
 ): JSONRPCErrorResponse => {
-  let message: string = "An unexpected error occurred";
+  let message: string = error?.message ?? "An unexpected error occurred";
   let code: number = DefaultErrorCode;
   let data: any;
-
-  if (error instanceof Error) {
-    message = error.message;
-  }
 
   if (error instanceof JSONRPCErrorException) {
     code = error.code;
