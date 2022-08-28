@@ -3,7 +3,9 @@ import { expect } from "chai";
 import {
   createJSONRPCErrorResponse,
   JSONRPC,
+  JSONRPCError,
   JSONRPCErrorCode,
+  JSONRPCErrorException,
   JSONRPCErrorResponse,
   JSONRPCID,
   JSONRPCRequest,
@@ -134,6 +136,36 @@ describe("JSONRPCServer", () => {
           message: "Test throwing",
         },
       });
+    });
+  });
+
+  describe("throwing JSONRPCErrorException", () => {
+    let expected: JSONRPCError;
+
+    beforeEach(() => {
+      expected = {
+        message: "thrown",
+        code: 1234,
+        data: {
+          foo: "bar",
+        },
+      };
+
+      server.addMethod("throw", () => {
+        throw new JSONRPCErrorException(
+          expected.message,
+          expected.code,
+          expected.data
+        );
+      });
+
+      return server
+        .receive({ jsonrpc: JSONRPC, id: 0, method: "throw" })
+        .then((givenResponse) => (response = givenResponse));
+    });
+
+    it("should respond error with custom code and data", () => {
+      expect(response!.error).to.deep.equal(expected);
     });
   });
 
