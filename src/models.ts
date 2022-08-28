@@ -65,6 +65,20 @@ export interface JSONRPCError {
   data?: any;
 }
 
+const createJSONRPCError = (
+  code: number,
+  message: string,
+  data?: any
+): JSONRPCError => {
+  const error: JSONRPCError = { code, message };
+
+  if (data != null) {
+    error.data = data;
+  }
+
+  return error;
+};
+
 export class JSONRPCErrorException extends Error implements JSONRPCError {
   public code: number;
   public data?: any;
@@ -81,16 +95,7 @@ export class JSONRPCErrorException extends Error implements JSONRPCError {
   }
 
   toObject(): JSONRPCError {
-    const obj: JSONRPCError = {
-      code: this.code,
-      message: this.message,
-    };
-
-    if (this.data) {
-      obj.data = this.data;
-    }
-
-    return obj;
+    return createJSONRPCError(this.code, this.message, this.data);
   }
 }
 
@@ -108,16 +113,10 @@ export const createJSONRPCErrorResponse = (
   message: string,
   data?: any
 ): JSONRPCErrorResponse => {
-  const error: JSONRPCErrorException = new JSONRPCErrorException(
-    code,
-    message,
-    data
-  );
-
   return {
     jsonrpc: JSONRPC,
     id,
-    error: error.toObject(),
+    error: createJSONRPCError(code, message, data),
   };
 };
 
