@@ -9,6 +9,7 @@ import {
   JSONRPCID,
   JSONRPCErrorResponse,
   createJSONRPCErrorResponse,
+  JSONRPCErrorException,
   JSONRPCError,
 } from ".";
 
@@ -125,6 +126,7 @@ describe("JSONRPCClient", () => {
             error: {
               code: 0,
               message: "This is a test. Do not panic.",
+              data: { optional: "data" },
             },
           };
 
@@ -133,8 +135,16 @@ describe("JSONRPCClient", () => {
           return promise;
         });
 
-        it("should reject with the error message", () => {
+        it("should reject with the error message, code and data", () => {
           expect(error.message).to.equal(response.error!.message);
+          expect(error.code).to.equal(response.error!.code);
+          expect(error.data).to.equal(response.error!.data);
+        });
+
+        it("should reject with a JSONRPCErrorException", () => {
+          expect(error instanceof Error).to.be.true;
+          expect(error instanceof JSONRPCErrorException).to.be.true;
+          expect(error.toObject()).to.deep.equal(response.error);
         });
       });
 

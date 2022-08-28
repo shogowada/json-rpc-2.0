@@ -65,6 +65,40 @@ export interface JSONRPCError {
   data?: any;
 }
 
+const createJSONRPCError = (
+  code: number,
+  message: string,
+  data?: any
+): JSONRPCError => {
+  const error: JSONRPCError = { code, message };
+
+  if (data != null) {
+    error.data = data;
+  }
+
+  return error;
+};
+
+export class JSONRPCErrorException extends Error implements JSONRPCError {
+  public code: number;
+  public data?: any;
+
+  constructor(message: string, code: number, data?: any) {
+    super(message);
+
+    // Manually set the prototype to fix TypeScript issue:
+    // https://github.com/Microsoft/TypeScript-wiki/blob/main/Breaking-Changes.md#extending-built-ins-like-error-array-and-map-may-no-longer-work
+    Object.setPrototypeOf(this, JSONRPCErrorException.prototype);
+
+    this.code = code;
+    this.data = data;
+  }
+
+  toObject(): JSONRPCError {
+    return createJSONRPCError(this.code, this.message, this.data);
+  }
+}
+
 export enum JSONRPCErrorCode {
   ParseError = -32700,
   InvalidRequest = -32600,
@@ -79,16 +113,10 @@ export const createJSONRPCErrorResponse = (
   message: string,
   data?: any
 ): JSONRPCErrorResponse => {
-  const error: JSONRPCError = { code, message };
-
-  if (data) {
-    error.data = data;
-  }
-
   return {
     jsonrpc: JSONRPC,
     id,
-    error,
+    error: createJSONRPCError(code, message, data),
   };
 };
 

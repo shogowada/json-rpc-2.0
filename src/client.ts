@@ -3,6 +3,8 @@ import {
   createJSONRPCRequest,
   createJSONRPCNotification,
   JSONRPC,
+  JSONRPCErrorException,
+  JSONRPCErrorCode,
   JSONRPCErrorResponse,
   JSONRPCID,
   JSONRPCParams,
@@ -145,7 +147,13 @@ export class JSONRPCClient<ClientParams = void>
     if (response.result !== undefined && !response.error) {
       return response.result;
     } else if (response.result === undefined && response.error) {
-      return Promise.reject(new Error(response.error.message));
+      return Promise.reject(
+        new JSONRPCErrorException(
+          response.error.message,
+          response.error.code,
+          response.error.data
+        )
+      );
     } else {
       return Promise.reject(new Error("An unexpected error occurred"));
     }
