@@ -5,6 +5,7 @@ import {
   JSONRPC,
   JSONRPCID,
   JSONRPCErrorCode,
+  JSONRPCErrorException,
   createJSONRPCErrorResponse,
   createJSONRPCSuccessResponse,
   isJSONRPCRequest,
@@ -296,12 +297,20 @@ const defaultMapErrorToJSONRPCErrorResponse = (
   id: JSONRPCID,
   error: any
 ): JSONRPCErrorResponse => {
-  return createJSONRPCErrorResponse(
-    id,
-    error?.code || DefaultErrorCode,
-    error?.message || "An unexpected error occurred",
-    error?.data
-  );
+  let message: string = "An unexpected error occurred";
+  let code: number = DefaultErrorCode;
+  let data: any;
+
+  if (error instanceof Error) {
+    message = error.message;
+  }
+
+  if (error instanceof JSONRPCErrorException) {
+    code = error.code;
+    data = error.data;
+  }
+
+  return createJSONRPCErrorResponse(id, code, message, data);
 };
 
 const mapResponse = (
