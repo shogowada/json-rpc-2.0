@@ -157,8 +157,8 @@ export class JSONRPCClient<ClientParams = void>
     } else {
       return Promise.reject(
         new JSONRPCErrorException(
-          JSONRPCErrorCode.ParseError,
-          "Received an invalid request"
+          DefaultErrorCode,
+          "An unexpected error occurred"
         )
       );
     }
