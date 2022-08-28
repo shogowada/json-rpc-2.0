@@ -281,7 +281,28 @@ client.request("fail").then(
 );
 ```
 
-If you want to return a custom error response, either use [advanced APIs](#advanced-apis) or implement `mapErrorToJSONRPCErrorResponse`:
+If you want to return a custom error response, use `JSONRPCErrorException`:
+
+```typescript
+import { JSONRPCErrorException } from "json-rpc-2.0";
+
+const server = new JSONRPCServer();
+
+server.addMethod("throws", () => {
+  const errorCode = 123;
+  const errorData = {
+    foo: "bar",
+  };
+
+  throw new JSONRPCErrorException(
+    "A human readable error message",
+    errorCode,
+    errorData
+  );
+});
+```
+
+Alternatively, use [advanced APIs](#advanced-apis) or implement `mapErrorToJSONRPCErrorResponse`:
 
 ```typescript
 import {
