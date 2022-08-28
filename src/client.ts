@@ -155,12 +155,7 @@ export class JSONRPCClient<ClientParams = void>
         )
       );
     } else {
-      return Promise.reject(
-        new JSONRPCErrorException(
-          "An unexpected error occurred",
-          DefaultErrorCode
-        )
-      );
+      return Promise.reject(new Error("An unexpected error occurred"));
     }
   }
 
