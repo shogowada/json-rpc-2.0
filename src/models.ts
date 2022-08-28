@@ -83,7 +83,7 @@ export class JSONRPCErrorException extends Error implements JSONRPCError {
   public code: number;
   public data?: any;
 
-  constructor(code: number, message: string, data?: any) {
+  constructor(message: string, code: number, data?: any) {
     super(message);
 
     // Manually set the prototype to fix TypeScript issue:

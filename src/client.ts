@@ -149,16 +149,16 @@ export class JSONRPCClient<ClientParams = void>
     } else if (response.result === undefined && response.error) {
       return Promise.reject(
         new JSONRPCErrorException(
-          response.error.code,
           response.error.message,
+          response.error.code,
           response.error.data
         )
       );
     } else {
       return Promise.reject(
         new JSONRPCErrorException(
-          DefaultErrorCode,
-          "An unexpected error occurred"
+          "An unexpected error occurred",
+          DefaultErrorCode
         )
       );
     }
