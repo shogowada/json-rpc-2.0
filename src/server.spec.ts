@@ -85,7 +85,9 @@ describe("JSONRPCServer", () => {
             }),
             { userID: "bar" }
           )
-          .then((givenResponse: JSONRPCResponse) => (response = givenResponse));
+          .then(
+            (givenResponse) => (response = givenResponse as JSONRPCResponse)
+          );
       });
 
       it("should echo the text with the user ID", () => {
@@ -623,7 +625,7 @@ describe("JSONRPCServer", () => {
         server.applyMiddleware(async (next, request, serverParams) => {
           try {
             return await next(request, serverParams);
-          } catch (error) {
+          } catch (error: any) {
             return createJSONRPCErrorResponse(
               request.id!,
               error.code || JSONRPCErrorCode.InternalError,

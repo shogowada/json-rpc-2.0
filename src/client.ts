@@ -2,9 +2,7 @@ import {
   createJSONRPCErrorResponse,
   createJSONRPCRequest,
   createJSONRPCNotification,
-  JSONRPC,
   JSONRPCErrorException,
-  JSONRPCErrorCode,
   JSONRPCErrorResponse,
   JSONRPCID,
   JSONRPCParams,
@@ -232,7 +230,7 @@ export class JSONRPCClient<ClientParams = void>
   }
 
   rejectAllPendingRequests(message: string): void {
-    this.idToResolveMap.forEach((resolve: Resolve, id: string) =>
+    this.idToResolveMap.forEach((resolve: Resolve, id: JSONRPCID) =>
       resolve(createJSONRPCErrorResponse(id, DefaultErrorCode, message))
     );
     this.idToResolveMap.clear();

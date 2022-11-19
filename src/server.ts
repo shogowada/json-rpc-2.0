@@ -2,7 +2,6 @@ import {
   JSONRPCRequest,
   JSONRPCResponse,
   JSONRPCParams,
-  JSONRPC,
   JSONRPCID,
   JSONRPCErrorCode,
   JSONRPCErrorException,
@@ -17,7 +16,7 @@ import {
 import { DefaultErrorCode } from "./internal";
 
 export type SimpleJSONRPCMethod<ServerParams = void> = (
-  params: Partial<JSONRPCParams> | undefined,
+  params: JSONRPCParams,
   serverParams: ServerParams | undefined
 ) => any;
 export type JSONRPCMethod<ServerParams = void> = (
@@ -90,7 +89,7 @@ export class JSONRPCServer<ServerParams = void> {
   ): JSONRPCMethod<ServerParams> {
     return (
       request: JSONRPCRequest,
-      serverParams: ServerParams
+      serverParams: ServerParams | undefined
     ): JSONRPCResponsePromise => {
       const response = method(request.params, serverParams);
       return Promise.resolve(response).then((result: any) =>
