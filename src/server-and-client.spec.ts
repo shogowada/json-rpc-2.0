@@ -19,21 +19,21 @@ interface ServerParams {
 }
 
 describe("JSONRPCServerAndClient", () => {
-  let serverAndClient1: JSONRPCServerAndClient<ServerParams>;
-  let serverAndClient2: JSONRPCServerAndClient<void, ServerParams>;
+  let serverAndClient1: JSONRPCServerAndClient<ServerParams | void>;
+  let serverAndClient2: JSONRPCServerAndClient<void, ServerParams | void>;
 
   beforeEach(() => {
     serverAndClient1 = new JSONRPCServerAndClient(
-      new JSONRPCServer<ServerParams>(),
+      new JSONRPCServer<ServerParams | void>(),
       new JSONRPCClient((payload: object) => {
-        return serverAndClient2.receiveAndSend(payload);
+        return serverAndClient2.receiveAndSend(payload, undefined);
       })
     );
 
-    serverAndClient2 = new JSONRPCServerAndClient<void, ServerParams>(
+    serverAndClient2 = new JSONRPCServerAndClient(
       new JSONRPCServer(),
-      new JSONRPCClient<ServerParams>(
-        (payload: object, params: ServerParams) => {
+      new JSONRPCClient<ServerParams | void>(
+        (payload: object, params: ServerParams | void) => {
           return serverAndClient1.receiveAndSend(payload, params);
         }
       )
@@ -44,11 +44,11 @@ describe("JSONRPCServerAndClient", () => {
       "echo1-2",
       async (
         jsonRPCRequest: JSONRPCRequest,
-        { userID }: ServerParams
+        params: ServerParams | void
       ): Promise<JSONRPCResponse> => ({
         jsonrpc: JSONRPC,
         id: jsonRPCRequest.id!,
-        result: `${userID} said ${
+        result: `${params?.userID} said ${
           (jsonRPCRequest.params as EchoParams).message
         }`,
       })
@@ -146,7 +146,7 @@ describe("JSONRPCServerAndClient", () => {
         return new Promise<void>((givenResolve) => (resolve = givenResolve));
       });
 
-      promise = serverAndClient1.request("hang");
+      promise = serverAndClient1.request("hang", undefined);
     });
 
     describe("rejecting all pending requests", () => {

@@ -13,8 +13,8 @@ describe("JSONRPCClient and JSONRPCServer", () => {
 
     server = new JSONRPCServer();
     client = new JSONRPCClient(
-      request => {
-        return server.receive(request).then(response => {
+      (request) => {
+        return server.receive(request).then((response) => {
           if (response) {
             client.receive(response);
           }
@@ -29,8 +29,8 @@ describe("JSONRPCClient and JSONRPCServer", () => {
       server.addMethod("foo", () => "bar");
 
       return client
-        .request("foo")
-        .then(result => expect(result).to.equal("bar"));
+        .request("foo", undefined)
+        .then((result) => expect(result).to.equal("bar"));
     });
   });
 

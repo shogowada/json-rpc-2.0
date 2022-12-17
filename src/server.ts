@@ -17,22 +17,22 @@ import { DefaultErrorCode } from "./internal";
 
 export type SimpleJSONRPCMethod<ServerParams = void> = (
   params: JSONRPCParams,
-  serverParams: ServerParams | undefined
+  serverParams: ServerParams
 ) => any;
 export type JSONRPCMethod<ServerParams = void> = (
   request: JSONRPCRequest,
-  serverParams: ServerParams | undefined
+  serverParams: ServerParams
 ) => JSONRPCResponsePromise;
 export type JSONRPCResponsePromise = PromiseLike<JSONRPCResponse | null>;
 
 export type JSONRPCServerMiddlewareNext<ServerParams> = (
   request: JSONRPCRequest,
-  serverParams: ServerParams | undefined
+  serverParams: ServerParams
 ) => JSONRPCResponsePromise;
 export type JSONRPCServerMiddleware<ServerParams> = (
   next: JSONRPCServerMiddlewareNext<ServerParams>,
   request: JSONRPCRequest,
-  serverParams: ServerParams | undefined
+  serverParams: ServerParams
 ) => JSONRPCResponsePromise;
 
 type NameToMethodDictionary<ServerParams> = {
@@ -89,7 +89,7 @@ export class JSONRPCServer<ServerParams = void> {
   ): JSONRPCMethod<ServerParams> {
     return (
       request: JSONRPCRequest,
-      serverParams: ServerParams | undefined
+      serverParams: ServerParams
     ): JSONRPCResponsePromise => {
       const response = method(request.params, serverParams);
       return Promise.resolve(response).then((result: any) =>
@@ -212,7 +212,7 @@ export class JSONRPCServer<ServerParams = void> {
     return (
       next: JSONRPCServerMiddlewareNext<ServerParams>,
       request: JSONRPCRequest,
-      serverParams: ServerParams | undefined
+      serverParams: ServerParams
     ): JSONRPCResponsePromise => {
       return prevMiddleware(
         (request, serverParams) => nextMiddleware(next, request, serverParams),
@@ -229,7 +229,7 @@ export class JSONRPCServer<ServerParams = void> {
   ): JSONRPCResponsePromise {
     const callMethod: JSONRPCServerMiddlewareNext<ServerParams> = (
       request: JSONRPCRequest,
-      serverParams: ServerParams | undefined
+      serverParams: ServerParams
     ): JSONRPCResponsePromise => {
       if (method) {
         return method(request, serverParams);

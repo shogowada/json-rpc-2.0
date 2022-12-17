@@ -420,7 +420,7 @@ describe("JSONRPCServer", () => {
           (
             next: JSONRPCServerMiddlewareNext<ServerParams>,
             request: JSONRPCRequest,
-            serverParams: ServerParams | undefined
+            serverParams: ServerParams
           ): PromiseLike<JSONRPCResponse | null> => {
             middlewareCalled = true;
             return next(request, serverParams).then((result) => {
