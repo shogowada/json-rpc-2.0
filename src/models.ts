@@ -2,7 +2,7 @@ export type JSONRPC = "2.0";
 export const JSONRPC: JSONRPC = "2.0";
 
 export type JSONRPCID = string | number | null;
-export type JSONRPCParams = object | any[];
+export type JSONRPCParams = any;
 
 export const isJSONRPCID = (id: any): id is JSONRPCID =>
   typeof id === "string" || typeof id === "number" || id === null;

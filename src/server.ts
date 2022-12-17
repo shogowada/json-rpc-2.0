@@ -2,7 +2,6 @@ import {
   JSONRPCRequest,
   JSONRPCResponse,
   JSONRPCParams,
-  JSONRPC,
   JSONRPCID,
   JSONRPCErrorCode,
   JSONRPCErrorException,
@@ -17,23 +16,23 @@ import {
 import { DefaultErrorCode } from "./internal";
 
 export type SimpleJSONRPCMethod<ServerParams = void> = (
-  params: Partial<JSONRPCParams> | undefined,
-  serverParams: ServerParams | undefined
+  params: JSONRPCParams,
+  serverParams: ServerParams
 ) => any;
 export type JSONRPCMethod<ServerParams = void> = (
   request: JSONRPCRequest,
-  serverParams: ServerParams | undefined
+  serverParams: ServerParams
 ) => JSONRPCResponsePromise;
 export type JSONRPCResponsePromise = PromiseLike<JSONRPCResponse | null>;
 
 export type JSONRPCServerMiddlewareNext<ServerParams> = (
   request: JSONRPCRequest,
-  serverParams: ServerParams | undefined
+  serverParams: ServerParams
 ) => JSONRPCResponsePromise;
 export type JSONRPCServerMiddleware<ServerParams> = (
   next: JSONRPCServerMiddlewareNext<ServerParams>,
   request: JSONRPCRequest,
-  serverParams: ServerParams | undefined
+  serverParams: ServerParams
 ) => JSONRPCResponsePromise;
 
 type NameToMethodDictionary<ServerParams> = {
@@ -213,7 +212,7 @@ export class JSONRPCServer<ServerParams = void> {
     return (
       next: JSONRPCServerMiddlewareNext<ServerParams>,
       request: JSONRPCRequest,
-      serverParams: ServerParams | undefined
+      serverParams: ServerParams
     ): JSONRPCResponsePromise => {
       return prevMiddleware(
         (request, serverParams) => nextMiddleware(next, request, serverParams),
@@ -230,7 +229,7 @@ export class JSONRPCServer<ServerParams = void> {
   ): JSONRPCResponsePromise {
     const callMethod: JSONRPCServerMiddlewareNext<ServerParams> = (
       request: JSONRPCRequest,
-      serverParams: ServerParams | undefined
+      serverParams: ServerParams
     ): JSONRPCResponsePromise => {
       if (method) {
         return method(request, serverParams);

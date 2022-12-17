@@ -55,31 +55,31 @@ export class JSONRPCServerAndClient<ServerParams = void, ClientParams = void> {
 
   request(
     method: string,
-    params?: JSONRPCParams,
-    clientParams?: ClientParams
+    params: JSONRPCParams,
+    clientParams: ClientParams
   ): PromiseLike<any> {
     return this.client.request(method, params, clientParams);
   }
 
   requestAdvanced(
     jsonRPCRequest: JSONRPCRequest,
-    clientParams?: ClientParams
+    clientParams: ClientParams
   ): PromiseLike<JSONRPCResponse>;
   requestAdvanced(
     jsonRPCRequest: JSONRPCRequest[],
-    clientParams?: ClientParams
+    clientParams: ClientParams
   ): PromiseLike<JSONRPCResponse[]>;
   requestAdvanced(
     jsonRPCRequest: JSONRPCRequest | JSONRPCRequest[],
-    clientParams?: ClientParams
+    clientParams: ClientParams
   ): PromiseLike<JSONRPCResponse | JSONRPCResponse[]> {
     return this.client.requestAdvanced(jsonRPCRequest as any, clientParams);
   }
 
   notify(
     method: string,
-    params?: JSONRPCParams,
-    clientParams?: ClientParams
+    params: JSONRPCParams,
+    clientParams: ClientParams
   ): void {
     this.client.notify(method, params, clientParams);
   }
@@ -90,8 +90,8 @@ export class JSONRPCServerAndClient<ServerParams = void, ClientParams = void> {
 
   async receiveAndSend(
     payload: any,
-    serverParams?: ServerParams,
-    clientParams?: ClientParams
+    serverParams: ServerParams,
+    clientParams: ClientParams
   ): Promise<void> {
     if (isJSONRPCResponse(payload) || isJSONRPCResponses(payload)) {
       this.client.receive(payload);

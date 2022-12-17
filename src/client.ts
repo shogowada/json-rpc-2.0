@@ -2,9 +2,7 @@ import {
   createJSONRPCErrorResponse,
   createJSONRPCRequest,
   createJSONRPCNotification,
-  JSONRPC,
   JSONRPCErrorException,
-  JSONRPCErrorCode,
   JSONRPCErrorResponse,
   JSONRPCID,
   JSONRPCParams,
@@ -15,7 +13,7 @@ import { DefaultErrorCode } from "./internal";
 
 export type SendRequest<ClientParams> = (
   payload: any,
-  clientParams: ClientParams | undefined
+  clientParams: ClientParams
 ) => PromiseLike<void>;
 export type CreateID = () => JSONRPCID;
 
@@ -96,7 +94,7 @@ export class JSONRPCClient<ClientParams = void>
 
     const requestAdvanced = (
       request: JSONRPCRequest | JSONRPCRequest[],
-      clientParams?: ClientParams
+      clientParams: ClientParams
     ): PromiseLike<JSONRPCResponse | JSONRPCResponse[]> => {
       const ids: JSONRPCID[] = (!Array.isArray(request) ? [request] : request)
         .map((request) => request.id)
@@ -109,8 +107,8 @@ export class JSONRPCClient<ClientParams = void>
     return {
       request: (
         method: string,
-        params?: JSONRPCParams,
-        clientParams?: ClientParams
+        params: JSONRPCParams,
+        clientParams: ClientParams
       ): PromiseLike<any> => {
         const id: JSONRPCID = this._createID();
         return timeoutRequest([id], () =>
@@ -119,15 +117,15 @@ export class JSONRPCClient<ClientParams = void>
       },
       requestAdvanced: (
         request: any,
-        clientParams?: ClientParams
+        clientParams: ClientParams
       ): PromiseLike<any> => requestAdvanced(request, clientParams),
     };
   }
 
   request(
     method: string,
-    params?: JSONRPCParams,
-    clientParams?: ClientParams
+    params: JSONRPCParams,
+    clientParams: ClientParams
   ): PromiseLike<any> {
     return this.requestWithID(method, params, clientParams, this._createID());
   }
@@ -135,7 +133,7 @@ export class JSONRPCClient<ClientParams = void>
   private async requestWithID(
     method: string,
     params: JSONRPCParams | undefined,
-    clientParams: ClientParams | undefined,
+    clientParams: ClientParams,
     id: JSONRPCID
   ): Promise<any> {
     const request: JSONRPCRequest = createJSONRPCRequest(id, method, params);
@@ -161,15 +159,15 @@ export class JSONRPCClient<ClientParams = void>
 
   requestAdvanced(
     request: JSONRPCRequest,
-    clientParams?: ClientParams
+    clientParams: ClientParams
   ): PromiseLike<JSONRPCResponse>;
   requestAdvanced(
     request: JSONRPCRequest[],
-    clientParams?: ClientParams
+    clientParams: ClientParams
   ): PromiseLike<JSONRPCResponse[]>;
   requestAdvanced(
     requests: JSONRPCRequest | JSONRPCRequest[],
-    clientParams?: ClientParams
+    clientParams: ClientParams
   ): PromiseLike<JSONRPCResponse | JSONRPCResponse[]> {
     const areRequestsOriginallyArray = Array.isArray(requests);
     if (!Array.isArray(requests)) {
@@ -216,23 +214,20 @@ export class JSONRPCClient<ClientParams = void>
 
   notify(
     method: string,
-    params?: JSONRPCParams,
-    clientParams?: ClientParams
+    params: JSONRPCParams,
+    clientParams: ClientParams
   ): void {
     const request: JSONRPCRequest = createJSONRPCNotification(method, params);
 
     this.send(request, clientParams).then(undefined, () => undefined);
   }
 
-  send(
-    payload: any,
-    clientParams: ClientParams | undefined
-  ): PromiseLike<void> {
+  send(payload: any, clientParams: ClientParams): PromiseLike<void> {
     return this._send(payload, clientParams);
   }
 
   rejectAllPendingRequests(message: string): void {
-    this.idToResolveMap.forEach((resolve: Resolve, id: string) =>
+    this.idToResolveMap.forEach((resolve: Resolve, id: JSONRPCID) =>
       resolve(createJSONRPCErrorResponse(id, DefaultErrorCode, message))
     );
     this.idToResolveMap.clear();

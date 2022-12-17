@@ -60,7 +60,7 @@ describe("JSONRPCClient", () => {
       result = undefined;
       error = undefined;
 
-      promise = client.request("foo", ["bar"]).then(
+      promise = client.request("foo", ["bar"], { token: "" }).then(
         (givenResult) => (result = givenResult),
         (givenError) => (error = givenError)
       );
@@ -279,7 +279,7 @@ describe("JSONRPCClient", () => {
       ];
 
       client
-        .requestAdvanced(requests)
+        .requestAdvanced(requests, { token: "" })
         .then((responses) => (actualResponses = responses));
 
       resolve!();
@@ -460,7 +460,7 @@ describe("JSONRPCClient", () => {
 
   describe("notifying", () => {
     beforeEach(() => {
-      client.notify("foo", ["bar"]);
+      client.notify("foo", ["bar"], { token: "" });
     });
 
     it("should send the notification", () => {
