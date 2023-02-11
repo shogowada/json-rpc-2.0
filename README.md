@@ -408,6 +408,61 @@ client
   });
 ```
 
+### Typed client and server
+
+To strongly type `request` and `addMethod` methods, use `TypedJSONRPCClient`, `TypedJSONRPCServer` and `TypedJSONRPCServerAndClient` interfaces.
+
+```typescript
+import {
+  JSONRPCClient,
+  JSONRPCServer,
+  JSONRPCServerAndClient,
+  TypedJSONRPCClient,
+  TypedJSONRPCServer,
+  TypedJSONRPCServerAndClient,
+} from "json-rpc-2.0";
+
+type Methods = {
+  echo(params: { message: string }): string;
+  sum(params: { x: number; y: number }): number;
+};
+
+const server: TypedJSONRPCServer<Methods> = new JSONRPCServer(/* ... */);
+const client: TypedJSONRPCClient<Methods> = new JSONRPCClient(/* ... */);
+const serverAndClient: TypedJSONRPCServerAndClient<Methods> =
+  new JSONRPCServerAndClient(/* ... */);
+
+// Types are infered from the Methods type
+server.addMethod("echo", ({ message }) => message);
+server.addMethod("sum", ({ x, y }) => x + y);
+// These result in type error
+// server.addMethod("ech0", ({ message }) => message); // typo in method name
+// server.addMethod("echo", ({ messagE }) => messagE); // typo in param name
+// server.addMethod("echo", ({ message }) => 123); // return type must be string
+
+client
+  .request("echo", { message: "hello" })
+  .then((result) => console.log(result));
+client.request("sum", { x: 1, y: 2 }).then((result) => console.log(result));
+// These result in type error
+// client.request("ech0", { message: "hello" }); // typo in method name
+// client.request("echo", { messagE: "hello" }); // typo in param name
+// client.request("echo", { message: 123 }); // message param must be string
+// client
+//   .request("echo", { message: "hello" })
+//   .then((result: number) => console.log(result)); // return type must be string
+
+// The same rule applies to TypedJSONRPCServerAndClient
+serverAndClient.addMethod("echo", ({ message }) => message);
+serverAndClient.addMethod("sum", ({ x, y }) => x + y);
+serverAndClient
+  .request("echo", { message: "hello" })
+  .then((result) => console.log(result));
+serverAndClient
+  .request("sum", { x: 1, y: 2 })
+  .then((result) => console.log(result));
+```
+
 ## Build
 
 `npm run build`
