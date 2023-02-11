@@ -6,19 +6,15 @@ import {
 } from "./server";
 import { JSONRPCClient, JSONRPCRequester } from "./client";
 import {
-  createJSONRPCErrorResponse,
   ErrorListener,
   isJSONRPCRequest,
   isJSONRPCRequests,
   isJSONRPCResponse,
   isJSONRPCResponses,
-  JSONRPCErrorResponse,
-  JSONRPCID,
   JSONRPCParams,
   JSONRPCRequest,
   JSONRPCResponse,
 } from "./models";
-import { DefaultErrorCode } from "./internal";
 
 export interface JSONRPCServerAndClientOptions {
   errorListener?: ErrorListener;
