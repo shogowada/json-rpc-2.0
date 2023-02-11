@@ -11,6 +11,7 @@ Let your client and server talk over function calls under [JSON-RPC 2.0 spec](ht
 - Works in both browser and Node.js
 - First-class TypeScript support
   - Written in TypeScript
+  - [Strongly typed client and server calls](#typed-client-and-server)
 
 ## Install
 
