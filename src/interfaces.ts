@@ -30,22 +30,25 @@ export interface TypedJSONRPCServer<
 }
 
 export interface TypedJSONRPCServerAndClient<
-  Methods extends MethodsType,
-  ClientParams = void,
-  ServerParams = void
+  ServerMethods extends MethodsType,
+  ClientMethods extends MethodsType,
+  ServerParams = void,
+  ClientParams = void
 > extends JSONRPCServerAndClient<ServerParams, ClientParams> {
-  request<Method extends Extract<keyof Methods, string>>(
+  request<Method extends Extract<keyof ClientMethods, string>>(
     method: Method,
-    ...args: Parameters<Methods[Method]>[0] extends undefined
+    ...args: Parameters<ClientMethods[Method]>[0] extends undefined
       ? [void, ClientParams]
-      : [Parameters<Methods[Method]>[0], ClientParams]
-  ): PromiseLike<ReturnType<Methods[Method]>>;
+      : [Parameters<ClientMethods[Method]>[0], ClientParams]
+  ): PromiseLike<ReturnType<ClientMethods[Method]>>;
 
-  addMethod<Method extends Extract<keyof Methods, string>>(
+  addMethod<Method extends Extract<keyof ServerMethods, string>>(
     name: Method,
     method: (
-      params: Parameters<Methods[Method]>[0],
+      params: Parameters<ServerMethods[Method]>[0],
       serverParams: ServerParams
-    ) => ReturnType<Methods[Method]> | PromiseLike<ReturnType<Methods[Method]>>
+    ) =>
+      | ReturnType<ServerMethods[Method]>
+      | PromiseLike<ReturnType<ServerMethods[Method]>>
   ): void;
 }

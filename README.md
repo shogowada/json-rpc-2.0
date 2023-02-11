@@ -429,8 +429,6 @@ type Methods = {
 
 const server: TypedJSONRPCServer<Methods> = new JSONRPCServer(/* ... */);
 const client: TypedJSONRPCClient<Methods> = new JSONRPCClient(/* ... */);
-const serverAndClient: TypedJSONRPCServerAndClient<Methods> =
-  new JSONRPCServerAndClient(/* ... */);
 
 // Types are infered from the Methods type
 server.addMethod("echo", ({ message }) => message);
@@ -453,13 +451,31 @@ client.request("sum", { x: 1, y: 2 }).then((result) => console.log(result));
 //   .then((result: number) => console.log(result)); // return type must be string
 
 // The same rule applies to TypedJSONRPCServerAndClient
-serverAndClient.addMethod("echo", ({ message }) => message);
-serverAndClient.addMethod("sum", ({ x, y }) => x + y);
-serverAndClient
-  .request("echo", { message: "hello" })
-  .then((result) => console.log(result));
-serverAndClient
+type ServerAMethods = {
+  echo(params: { message: string }): string;
+};
+
+type ServerBMethods = {
+  sum(params: { x: number; y: number }): number;
+};
+
+const serverAndClientA: TypedJSONRPCServerAndClient<
+  ServerAMethods,
+  ServerBMethods
+> = new JSONRPCServerAndClient(/* ... */);
+const serverAndClientB: TypedJSONRPCServerAndClient<
+  ServerBMethods,
+  ServerAMethods
+> = new JSONRPCServerAndClient(/* ... */);
+
+serverAndClientA.addMethod("echo", ({ message }) => message);
+serverAndClientB.addMethod("sum", ({ x, y }) => x + y);
+
+serverAndClientA
   .request("sum", { x: 1, y: 2 })
+  .then((result) => console.log(result));
+serverAndClientB
+  .request("echo", { message: "hello" })
   .then((result) => console.log(result));
 ```
 
