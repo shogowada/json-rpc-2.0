@@ -14,7 +14,7 @@ import { DefaultErrorCode } from "./internal";
 export type SendRequest<ClientParams> = (
   payload: any,
   clientParams: ClientParams
-) => PromiseLike<void>;
+) => PromiseLike<void> | void;
 export type CreateID = () => JSONRPCID;
 
 type Resolve = (response: JSONRPCResponse) => void;
@@ -222,7 +222,7 @@ export class JSONRPCClient<ClientParams = void>
     this.send(request, clientParams).then(undefined, () => undefined);
   }
 
-  send(payload: any, clientParams: ClientParams): PromiseLike<void> {
+  async send(payload: any, clientParams: ClientParams): Promise<void> {
     return this._send(payload, clientParams);
   }
 
