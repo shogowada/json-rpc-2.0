@@ -363,8 +363,10 @@ server.addMethodAdvanced(
     }
   }
 );
+```
 
-// Remove the added method
+```typescript
+// You can remove the added method if needed
 server.removeMethod("doSomething");
 ```
 
