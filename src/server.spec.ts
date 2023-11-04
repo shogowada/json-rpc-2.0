@@ -98,6 +98,33 @@ describe("JSONRPCServer", () => {
         });
       });
     });
+
+    describe("removing the echo method", () => {
+      beforeEach(() => {
+        server.removeMethod("echo");
+      });
+
+      describe("receiving a request to the method", () => {
+        beforeEach(() => {
+          return server
+            .receive({
+              jsonrpc: JSONRPC,
+              id: 0,
+              method: "echo",
+              params: { text: "foo" },
+            })
+            .then(
+              (givenResponse) => (response = givenResponse as JSONRPCResponse)
+            );
+        });
+
+        it("should respond not found", () => {
+          expect(response?.error?.code).to.equal(
+            JSONRPCErrorCode.MethodNotFound
+          );
+        });
+      });
+    });
   });
 
   describe("responding undefined", () => {

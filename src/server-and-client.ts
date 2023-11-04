@@ -49,6 +49,10 @@ export class JSONRPCServerAndClient<ServerParams = void, ClientParams = void> {
     this.server.addMethodAdvanced(name, method);
   }
 
+  removeMethod(name: string): void {
+    this.server.removeMethod(name);
+  }
+
   timeout(delay: number): JSONRPCRequester<ClientParams> {
     return this.client.timeout(delay);
   }

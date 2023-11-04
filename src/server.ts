@@ -84,6 +84,10 @@ export class JSONRPCServer<ServerParams = void> {
     this.addMethodAdvanced(name, this.toJSONRPCMethod(method));
   }
 
+  removeMethod(name: string): void {
+    delete this.nameToMethodDictionary[name];
+  }
+
   private toJSONRPCMethod(
     method: SimpleJSONRPCMethod<ServerParams>
   ): JSONRPCMethod<ServerParams> {

@@ -7,6 +7,7 @@ import {
   JSONRPCRequest,
   JSONRPC,
   JSONRPCResponse,
+  JSONRPCErrorCode,
 } from ".";
 import { JSONRPCClient } from "./client";
 
@@ -69,6 +70,31 @@ describe("JSONRPCServerAndClient", () => {
 
     it("should request to server 2", () => {
       expect(result).to.equal("foo");
+    });
+
+    describe("removing the method", () => {
+      beforeEach(() => {
+        serverAndClient2.removeMethod("echo2");
+      });
+
+      describe("requesting from server 1", () => {
+        let response: JSONRPCResponse;
+
+        beforeEach(async () => {
+          response = await serverAndClient1.requestAdvanced({
+            jsonrpc: JSONRPC,
+            id: 0,
+            method: "echo2",
+            params: { message: "foo" },
+          });
+        });
+
+        it("should return not found", () => {
+          expect(response.error?.code).to.equal(
+            JSONRPCErrorCode.MethodNotFound
+          );
+        });
+      });
     });
   });
 

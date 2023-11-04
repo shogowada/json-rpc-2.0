@@ -363,6 +363,9 @@ server.addMethodAdvanced(
     }
   }
 );
+
+// Remove the added method
+server.removeMethod("doSomething");
 ```
 
 #### Client
