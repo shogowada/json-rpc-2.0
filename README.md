@@ -428,6 +428,10 @@ import {
   TypedJSONRPCServerAndClient,
 } from "json-rpc-2.0";
 
+// Use `type` instead of `interface`. In TypeScript, interface can be exnteded,
+// so the type checker considers the possibility of the interface being extended,
+// resulting in an error.
+// Reference: https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#differences-between-type-aliases-and-interfaces
 type Methods = {
   echo(params: { message: string }): string;
   sum(params: { x: number; y: number }): number;
