@@ -11,7 +11,7 @@ import {
   createJSONRPCErrorResponse,
   JSONRPCErrorException,
   JSONRPCError,
-} from ".";
+} from "./index.js";
 
 interface ClientParams {
   token: string;
@@ -34,7 +34,7 @@ describe("JSONRPCClient", () => {
 
     const send = (
       request: JSONRPCRequest,
-      clientParams: ClientParams
+      clientParams: ClientParams,
     ): PromiseLike<void> => {
       lastRequest = request;
       lastClientParams = clientParams;
@@ -62,7 +62,7 @@ describe("JSONRPCClient", () => {
 
       promise = client.request("foo", ["bar"], { token: "" }).then(
         (givenResult) => (result = givenResult),
-        (givenError) => (error = givenError)
+        (givenError) => (error = givenError),
       );
     });
 
@@ -335,7 +335,7 @@ describe("JSONRPCClient", () => {
       it("should reject", () => {
         return promise.then(
           () => Promise.reject(new Error("Expected to fail")),
-          () => undefined
+          () => undefined,
         );
       });
     });
@@ -430,7 +430,7 @@ describe("JSONRPCClient", () => {
         .timeout(
           delay,
           (id: JSONRPCID): JSONRPCErrorResponse =>
-            createJSONRPCErrorResponse(id, errorCode, errorMessage, errorData)
+            createJSONRPCErrorResponse(id, errorCode, errorMessage, errorData),
         )
         .requestAdvanced({
           jsonrpc: JSONRPC,

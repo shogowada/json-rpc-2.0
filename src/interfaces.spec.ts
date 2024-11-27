@@ -4,11 +4,11 @@ import {
   TypedJSONRPCClient,
   TypedJSONRPCServer,
   TypedJSONRPCServerAndClient,
-} from "./interfaces";
-import { JSONRPCClient } from "./client";
-import { JSONRPCRequest } from "./models";
-import { JSONRPCServer } from "./server";
-import { JSONRPCServerAndClient } from "./server-and-client";
+} from "./interfaces.js";
+import { JSONRPCClient } from "./client.js";
+import { JSONRPCRequest } from "./models.js";
+import { JSONRPCServer } from "./server.js";
+import { JSONRPCServerAndClient } from "./server-and-client.js";
 
 describe("interfaces", () => {
   describe("independent server and client", () => {
@@ -77,7 +77,7 @@ describe("interfaces", () => {
           "objectArgs",
           ({ foo, bar }: { foo: string; bar: number }): string => {
             return `${foo}.${bar}`;
-          }
+          },
         );
 
         actual = await client.request("objectArgs", {
@@ -99,7 +99,7 @@ describe("interfaces", () => {
           "arrayArgs",
           ([foo, bar]: [string, number]): string => {
             return `${foo}.${bar}`;
-          }
+          },
         );
 
         actual = await client.request("arrayArgs", ["string value", 123]);
@@ -133,15 +133,15 @@ describe("interfaces", () => {
       serverAndClientA = new JSONRPCServerAndClient(
         new JSONRPCServer<void>(),
         new JSONRPCClient<void>((request: JSONRPCRequest) =>
-          serverAndClientB.receiveAndSend(request)
-        )
+          serverAndClientB.receiveAndSend(request),
+        ),
       );
 
       serverAndClientB = new JSONRPCServerAndClient(
         new JSONRPCServer<void>(),
         new JSONRPCClient<void>((request) =>
-          serverAndClientA.receiveAndSend(request)
-        )
+          serverAndClientA.receiveAndSend(request),
+        ),
       );
 
       serverAndClientA.addMethod("echo", ({ message }) => message);

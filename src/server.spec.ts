@@ -12,7 +12,7 @@ import {
   JSONRPCResponse,
   JSONRPCServer,
   JSONRPCServerMiddlewareNext,
-} from ".";
+} from "./index.js";
 
 describe("JSONRPCServer", () => {
   interface ServerParams {
@@ -83,10 +83,10 @@ describe("JSONRPCServer", () => {
               method: "echo",
               params: { text: "foo" },
             }),
-            { userID: "bar" }
+            { userID: "bar" },
           )
           .then(
-            (givenResponse) => (response = givenResponse as JSONRPCResponse)
+            (givenResponse) => (response = givenResponse as JSONRPCResponse),
           );
       });
 
@@ -114,13 +114,13 @@ describe("JSONRPCServer", () => {
               params: { text: "foo" },
             })
             .then(
-              (givenResponse) => (response = givenResponse as JSONRPCResponse)
+              (givenResponse) => (response = givenResponse as JSONRPCResponse),
             );
         });
 
         it("should respond not found", () => {
           expect(response?.error?.code).to.equal(
-            JSONRPCErrorCode.MethodNotFound
+            JSONRPCErrorCode.MethodNotFound,
           );
         });
       });
@@ -184,7 +184,7 @@ describe("JSONRPCServer", () => {
         throw new JSONRPCErrorException(
           expected.message,
           expected.code,
-          expected.data
+          expected.data,
         );
       });
 
@@ -201,7 +201,7 @@ describe("JSONRPCServer", () => {
   describe("rejecting", () => {
     beforeEach(() => {
       server.addMethodAdvanced("reject", () =>
-        Promise.reject(new Error("Test rejecting"))
+        Promise.reject(new Error("Test rejecting")),
       );
 
       return server
@@ -303,7 +303,7 @@ describe("JSONRPCServer", () => {
 
       beforeEach(async () => {
         response = (await server.receiveJSON(
-          invalidJSON as any
+          invalidJSON as any,
         )) as JSONRPCResponse;
       });
 
@@ -319,7 +319,7 @@ describe("JSONRPCServer", () => {
     { jsonrpc: JSONRPC + "invalid", method: "" },
   ].forEach((invalidRequest) => {
     describe(`receiving an invalid request (${JSON.stringify(
-      invalidRequest
+      invalidRequest,
     )})`, () => {
       let response: JSONRPCResponse;
 
@@ -345,13 +345,13 @@ describe("JSONRPCServer", () => {
 
       server.mapErrorToJSONRPCErrorResponse = (
         id: JSONRPCID,
-        error: any
+        error: any,
       ): JSONRPCErrorResponse =>
         createJSONRPCErrorResponse(
           id,
           error.code,
           `${errorMessagePrefix}${error.message}`,
-          errorData
+          errorData,
         );
     });
 
@@ -383,7 +383,7 @@ describe("JSONRPCServer", () => {
 
       it("should respond a custom error message", () => {
         expect(response.error!.message).to.equal(
-          `${errorMessagePrefix}${errorMessage}`
+          `${errorMessagePrefix}${errorMessage}`,
         );
       });
 
@@ -409,7 +409,7 @@ describe("JSONRPCServer", () => {
         methodName,
         (
           request: JSONRPCRequest,
-          serverParams: ServerParams
+          serverParams: ServerParams,
         ): Promise<JSONRPCResponse> => {
           receivedRequest = request;
           receivedServerParams = serverParams;
@@ -431,7 +431,7 @@ describe("JSONRPCServer", () => {
               reject(error);
             };
           });
-        }
+        },
       );
     });
 
@@ -447,14 +447,14 @@ describe("JSONRPCServer", () => {
           (
             next: JSONRPCServerMiddlewareNext<ServerParams>,
             request: JSONRPCRequest,
-            serverParams: ServerParams
+            serverParams: ServerParams,
           ): PromiseLike<JSONRPCResponse | null> => {
             middlewareCalled = true;
             return next(request, serverParams).then((result) => {
               nextReturned = true;
               return result;
             });
-          }
+          },
         );
       });
 
@@ -564,7 +564,7 @@ describe("JSONRPCServer", () => {
               ...request,
               params: changedParams,
             },
-            changedServerParams
+            changedServerParams,
           );
         });
       });
@@ -618,7 +618,7 @@ describe("JSONRPCServer", () => {
                 },
               };
               return changedResponse;
-            }
+            },
           );
         });
       });
@@ -656,7 +656,7 @@ describe("JSONRPCServer", () => {
             return createJSONRPCErrorResponse(
               request.id!,
               error.code || JSONRPCErrorCode.InternalError,
-              error.message
+              error.message,
             );
           }
         });
@@ -687,7 +687,7 @@ describe("JSONRPCServer", () => {
           const expected: JSONRPCErrorResponse = createJSONRPCErrorResponse(
             0,
             error.code,
-            error.message
+            error.message,
           );
           expect(actualResponse).to.deep.equal(expected);
         });
@@ -717,7 +717,7 @@ describe("JSONRPCServer", () => {
           const expected: JSONRPCErrorResponse = createJSONRPCErrorResponse(
             0,
             code,
-            message
+            message,
           );
           expect(actualResponse).to.deep.equal(expected);
         });
@@ -744,7 +744,7 @@ describe("JSONRPCServer", () => {
           (next, request, serverParams) => {
             third = ++count;
             return next(request, serverParams);
-          }
+          },
         );
 
         server.receive({
@@ -780,7 +780,7 @@ describe("JSONRPCServer", () => {
 
       it("should return 3 responses", () => {
         expect(
-          (responses as JSONRPCResponse[]).map((response) => response.result)
+          (responses as JSONRPCResponse[]).map((response) => response.result),
         ).to.deep.equal(["1", "2", "3"]);
       });
     });
