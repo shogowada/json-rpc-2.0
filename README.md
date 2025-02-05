@@ -176,7 +176,11 @@ client.notify("log", { message: "Hello, World!" });
 Just like `JSONRPCServer`, you can inject custom params to `JSONRPCClient` too:
 
 ```javascript
-const client = new JSONRPCClient(
+interface AuthToken {
+  token: string;
+}
+
+const client = new JSONRPCClient<AuthToken>(
   // It can also take a custom parameter as the second parameter.
   (jsonRPCRequest, { token }) =>
     fetch("http://localhost/json-rpc", {
