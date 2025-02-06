@@ -42,14 +42,14 @@ type NameToMethodDictionary<ServerParams> = {
 const createParseErrorResponse = (): JSONRPCResponse =>
   createJSONRPCErrorResponse(null, JSONRPCErrorCode.ParseError, "Parse error");
 
-const createInvalidRequestResponse = (request: any): JSONRPCResponse =>
+export const createInvalidRequestResponse = (request: any): JSONRPCResponse =>
   createJSONRPCErrorResponse(
     isJSONRPCID(request.id) ? request.id : null,
     JSONRPCErrorCode.InvalidRequest,
     "Invalid Request"
   );
 
-const createMethodNotFoundResponse = (id: JSONRPCID): JSONRPCResponse =>
+export const createMethodNotFoundResponse = (id: JSONRPCID): JSONRPCResponse =>
   createJSONRPCErrorResponse(
     id,
     JSONRPCErrorCode.MethodNotFound,
@@ -69,6 +69,11 @@ export class JSONRPCServer<ServerParams = void> {
     id: JSONRPCID,
     error: any
   ) => JSONRPCErrorResponse = defaultMapErrorToJSONRPCErrorResponse;
+
+  public handleMethodNotFound: <ServerParams = void>(
+    request: JSONRPCRequest,
+    serverParams: ServerParams
+  ) => Promise<JSONRPCResponse | null> = defaultHandleMethodNotFound;
 
   constructor(options: JSONRPCServerOptions = {}) {
     this.nameToMethodDictionary = {};
@@ -237,10 +242,8 @@ export class JSONRPCServer<ServerParams = void> {
     ): JSONRPCResponsePromise => {
       if (method) {
         return method(request, serverParams);
-      } else if (request.id !== undefined) {
-        return Promise.resolve(createMethodNotFoundResponse(request.id));
       } else {
-        return Promise.resolve(null);
+        return this.handleMethodNotFound(request, serverParams);
       }
     };
 
@@ -310,6 +313,14 @@ const defaultMapErrorToJSONRPCErrorResponse = (
   }
 
   return createJSONRPCErrorResponse(id, code, message, data);
+};
+
+const defaultHandleMethodNotFound = async (request: JSONRPCRequest) => {
+  if (request.id !== undefined) {
+    return createMethodNotFoundResponse(request.id);
+  } else {
+    return null;
+  }
 };
 
 const mapResponse = (

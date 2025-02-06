@@ -333,6 +333,58 @@ describe("JSONRPCServer", () => {
     });
   });
 
+  describe("having a custom handleMethodNotFound method", () => {
+    it("should be called for requests", async () => {
+      let handleMethodNotFoundCalled = false;
+      server.handleMethodNotFound = async (request, serverParams) => {
+        handleMethodNotFoundCalled = true;
+        if (request.id == undefined) {
+          return null;
+        }
+        return createJSONRPCErrorResponse(
+          request.id,
+          JSONRPCErrorCode.MethodNotFound,
+          "Method not found from my handler"
+        );
+      };
+
+      response = (await server.receive({
+        jsonrpc: JSONRPC,
+        id: 0,
+        method: "notFoundRequest",
+      }))!;
+
+      expect(handleMethodNotFoundCalled).to.be.true;
+      expect(response.error!.code).to.equal(JSONRPCErrorCode.MethodNotFound);
+      expect(response.error!.message).to.equal(
+        "Method not found from my handler"
+      );
+    });
+
+    it("should be called for notifications", async () => {
+      let handleMethodNotFoundCalled = false;
+      server.handleMethodNotFound = async (request, serverParams) => {
+        handleMethodNotFoundCalled = true;
+        if (request.id == undefined) {
+          return null;
+        }
+        return createJSONRPCErrorResponse(
+          request.id,
+          JSONRPCErrorCode.MethodNotFound,
+          "Method not found from my handler"
+        );
+      };
+
+      response = (await server.receive({
+        jsonrpc: JSONRPC,
+        method: "notFoundNotification",
+      }))!;
+
+      expect(handleMethodNotFoundCalled).to.be.true;
+      expect(response).to.equal(null);
+    });
+  });
+
   describe("having a custom mapErrorToJSONRPCErrorResponse method", () => {
     let errorMessagePrefix: string;
     let errorData: any;
