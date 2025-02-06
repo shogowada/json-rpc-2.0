@@ -12,27 +12,27 @@ import {
   JSONRPCErrorResponse,
   JSONRPCSuccessResponse,
   ErrorListener,
-} from "./models";
-import { DefaultErrorCode } from "./internal";
+} from "./models.js";
+import { DefaultErrorCode } from "./internal.js";
 
 export type SimpleJSONRPCMethod<ServerParams = void> = (
   params: JSONRPCParams,
-  serverParams: ServerParams
+  serverParams: ServerParams,
 ) => any;
 export type JSONRPCMethod<ServerParams = void> = (
   request: JSONRPCRequest,
-  serverParams: ServerParams
+  serverParams: ServerParams,
 ) => JSONRPCResponsePromise;
 export type JSONRPCResponsePromise = PromiseLike<JSONRPCResponse | null>;
 
 export type JSONRPCServerMiddlewareNext<ServerParams> = (
   request: JSONRPCRequest,
-  serverParams: ServerParams
+  serverParams: ServerParams,
 ) => JSONRPCResponsePromise;
 export type JSONRPCServerMiddleware<ServerParams> = (
   next: JSONRPCServerMiddlewareNext<ServerParams>,
   request: JSONRPCRequest,
-  serverParams: ServerParams
+  serverParams: ServerParams,
 ) => JSONRPCResponsePromise;
 
 type NameToMethodDictionary<ServerParams> = {
@@ -46,14 +46,14 @@ const createInvalidRequestResponse = (request: any): JSONRPCResponse =>
   createJSONRPCErrorResponse(
     isJSONRPCID(request.id) ? request.id : null,
     JSONRPCErrorCode.InvalidRequest,
-    "Invalid Request"
+    "Invalid Request",
   );
 
 const createMethodNotFoundResponse = (id: JSONRPCID): JSONRPCResponse =>
   createJSONRPCErrorResponse(
     id,
     JSONRPCErrorCode.MethodNotFound,
-    "Method not found"
+    "Method not found",
   );
 
 export interface JSONRPCServerOptions {
@@ -67,7 +67,7 @@ export class JSONRPCServer<ServerParams = void> {
 
   public mapErrorToJSONRPCErrorResponse: (
     id: JSONRPCID,
-    error: any
+    error: any,
   ) => JSONRPCErrorResponse = defaultMapErrorToJSONRPCErrorResponse;
 
   constructor(options: JSONRPCServerOptions = {}) {
@@ -89,15 +89,15 @@ export class JSONRPCServer<ServerParams = void> {
   }
 
   private toJSONRPCMethod(
-    method: SimpleJSONRPCMethod<ServerParams>
+    method: SimpleJSONRPCMethod<ServerParams>,
   ): JSONRPCMethod<ServerParams> {
     return (
       request: JSONRPCRequest,
-      serverParams: ServerParams
+      serverParams: ServerParams,
     ): JSONRPCResponsePromise => {
       const response = method(request.params, serverParams);
       return Promise.resolve(response).then((result: any) =>
-        mapResultToJSONRPCResponse(request.id, result)
+        mapResultToJSONRPCResponse(request.id, result),
       );
     };
   }
@@ -111,7 +111,7 @@ export class JSONRPCServer<ServerParams = void> {
 
   receiveJSON(
     json: string,
-    serverParams?: ServerParams
+    serverParams?: ServerParams,
   ): PromiseLike<JSONRPCResponse | JSONRPCResponse[] | null> {
     const request: JSONRPCRequest | JSONRPCRequest[] | null =
       this.tryParseRequestJSON(json);
@@ -132,15 +132,15 @@ export class JSONRPCServer<ServerParams = void> {
 
   receive(
     request: JSONRPCRequest,
-    serverParams?: ServerParams
+    serverParams?: ServerParams,
   ): PromiseLike<JSONRPCResponse | null>;
   receive(
     request: JSONRPCRequest | JSONRPCRequest[],
-    serverParams?: ServerParams
+    serverParams?: ServerParams,
   ): PromiseLike<JSONRPCResponse | JSONRPCResponse[] | null>;
   receive(
     request: JSONRPCRequest | JSONRPCRequest[],
-    serverParams?: ServerParams
+    serverParams?: ServerParams,
   ): PromiseLike<JSONRPCResponse | JSONRPCResponse[] | null> {
     if (Array.isArray(request)) {
       return this.receiveMultiple(request, serverParams);
@@ -151,11 +151,11 @@ export class JSONRPCServer<ServerParams = void> {
 
   private async receiveMultiple(
     requests: JSONRPCRequest[],
-    serverParams?: ServerParams
+    serverParams?: ServerParams,
   ): Promise<JSONRPCResponse | JSONRPCResponse[] | null> {
     const responses: JSONRPCResponse[] = (
       await Promise.all(
-        requests.map((request) => this.receiveSingle(request, serverParams))
+        requests.map((request) => this.receiveSingle(request, serverParams)),
       )
     ).filter(isNonNull);
 
@@ -170,7 +170,7 @@ export class JSONRPCServer<ServerParams = void> {
 
   private async receiveSingle(
     request: JSONRPCRequest,
-    serverParams?: ServerParams
+    serverParams?: ServerParams,
   ): Promise<JSONRPCResponse | null> {
     const method = this.nameToMethodDictionary[request.method];
 
@@ -180,7 +180,7 @@ export class JSONRPCServer<ServerParams = void> {
       const response: JSONRPCResponse | null = await this.callMethod(
         method,
         request,
-        serverParams
+        serverParams,
       );
       return mapResponse(request, response);
     }
@@ -200,7 +200,7 @@ export class JSONRPCServer<ServerParams = void> {
   }
 
   private combineMiddlewares(
-    middlewares: JSONRPCServerMiddleware<ServerParams>[]
+    middlewares: JSONRPCServerMiddleware<ServerParams>[],
   ): JSONRPCServerMiddleware<ServerParams> | null {
     if (!middlewares.length) {
       return null;
@@ -211,17 +211,17 @@ export class JSONRPCServer<ServerParams = void> {
 
   private middlewareReducer(
     prevMiddleware: JSONRPCServerMiddleware<ServerParams>,
-    nextMiddleware: JSONRPCServerMiddleware<ServerParams>
+    nextMiddleware: JSONRPCServerMiddleware<ServerParams>,
   ): JSONRPCServerMiddleware<ServerParams> {
     return (
       next: JSONRPCServerMiddlewareNext<ServerParams>,
       request: JSONRPCRequest,
-      serverParams: ServerParams
+      serverParams: ServerParams,
     ): JSONRPCResponsePromise => {
       return prevMiddleware(
         (request, serverParams) => nextMiddleware(next, request, serverParams),
         request,
-        serverParams
+        serverParams,
       );
     };
   }
@@ -229,11 +229,11 @@ export class JSONRPCServer<ServerParams = void> {
   private callMethod(
     method: JSONRPCMethod<ServerParams> | undefined,
     request: JSONRPCRequest,
-    serverParams: ServerParams | undefined
+    serverParams: ServerParams | undefined,
   ): JSONRPCResponsePromise {
     const callMethod: JSONRPCServerMiddlewareNext<ServerParams> = (
       request: JSONRPCRequest,
-      serverParams: ServerParams
+      serverParams: ServerParams,
     ): JSONRPCResponsePromise => {
       if (method) {
         return method(request, serverParams);
@@ -247,10 +247,10 @@ export class JSONRPCServer<ServerParams = void> {
     const onError = (error: any): JSONRPCResponsePromise => {
       this.errorListener(
         `An unexpected error occurred while executing "${request.method}" JSON-RPC method:`,
-        error
+        error,
       );
       return Promise.resolve(
-        this.mapErrorToJSONRPCErrorResponseIfNecessary(request.id, error)
+        this.mapErrorToJSONRPCErrorResponseIfNecessary(request.id, error),
       );
     };
 
@@ -258,7 +258,7 @@ export class JSONRPCServer<ServerParams = void> {
       return (this.middleware || noopMiddleware)(
         callMethod,
         request,
-        serverParams
+        serverParams,
       ).then(undefined, onError);
     } catch (error) {
       return onError(error);
@@ -267,7 +267,7 @@ export class JSONRPCServer<ServerParams = void> {
 
   private mapErrorToJSONRPCErrorResponseIfNecessary(
     id: JSONRPCID | undefined,
-    error: any
+    error: any,
   ): JSONRPCErrorResponse | null {
     if (id !== undefined) {
       return this.mapErrorToJSONRPCErrorResponse(id, error);
@@ -282,12 +282,12 @@ const isNonNull = <T>(value: T | null): value is T => value !== null;
 const noopMiddleware: JSONRPCServerMiddleware<any> = (
   next,
   request,
-  serverParams
+  serverParams,
 ) => next(request, serverParams);
 
 const mapResultToJSONRPCResponse = (
   id: JSONRPCID | undefined,
-  result: any
+  result: any,
 ): JSONRPCSuccessResponse | null => {
   if (id !== undefined) {
     return createJSONRPCSuccessResponse(id, result);
@@ -298,7 +298,7 @@ const mapResultToJSONRPCResponse = (
 
 const defaultMapErrorToJSONRPCErrorResponse = (
   id: JSONRPCID,
-  error: any
+  error: any,
 ): JSONRPCErrorResponse => {
   let message: string = error?.message ?? "An unexpected error occurred";
   let code: number = DefaultErrorCode;
@@ -314,7 +314,7 @@ const defaultMapErrorToJSONRPCErrorResponse = (
 
 const mapResponse = (
   request: JSONRPCRequest,
-  response: JSONRPCResponse | null
+  response: JSONRPCResponse | null,
 ): JSONRPCResponse | null => {
   if (response) {
     return response;
@@ -322,7 +322,7 @@ const mapResponse = (
     return createJSONRPCErrorResponse(
       request.id,
       JSONRPCErrorCode.InternalError,
-      "Internal error"
+      "Internal error",
     );
   } else {
     return null;

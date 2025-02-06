@@ -8,8 +8,8 @@ import {
   JSONRPC,
   JSONRPCResponse,
   JSONRPCErrorCode,
-} from ".";
-import { JSONRPCClient } from "./client";
+} from "./index.js";
+import { JSONRPCClient } from "./client.js";
 
 interface EchoParams {
   message: string;
@@ -28,7 +28,7 @@ describe("JSONRPCServerAndClient", () => {
       new JSONRPCServer<ServerParams | void>(),
       new JSONRPCClient((payload: object) => {
         return serverAndClient2.receiveAndSend(payload, undefined);
-      })
+      }),
     );
 
     serverAndClient2 = new JSONRPCServerAndClient(
@@ -36,8 +36,8 @@ describe("JSONRPCServerAndClient", () => {
       new JSONRPCClient<ServerParams | void>(
         (payload: object, params: ServerParams | void) => {
           return serverAndClient1.receiveAndSend(payload, params);
-        }
-      )
+        },
+      ),
     );
 
     serverAndClient1.addMethod("echo1", ({ message }: EchoParams) => message);
@@ -45,14 +45,14 @@ describe("JSONRPCServerAndClient", () => {
       "echo1-2",
       async (
         jsonRPCRequest: JSONRPCRequest,
-        params: ServerParams | void
+        params: ServerParams | void,
       ): Promise<JSONRPCResponse> => ({
         jsonrpc: JSONRPC,
         id: jsonRPCRequest.id!,
         result: `${params?.userID} said ${
           (jsonRPCRequest.params as EchoParams).message
         }`,
-      })
+      }),
     );
 
     serverAndClient2.addMethod("echo2", ({ message }: EchoParams) => message);
@@ -91,7 +91,7 @@ describe("JSONRPCServerAndClient", () => {
 
         it("should return not found", () => {
           expect(response.error?.code).to.equal(
-            JSONRPCErrorCode.MethodNotFound
+            JSONRPCErrorCode.MethodNotFound,
           );
         });
       });
@@ -159,7 +159,7 @@ describe("JSONRPCServerAndClient", () => {
     it("should fail", () => {
       return promise.then(
         () => Promise.reject(new Error("Expected to fail")),
-        () => undefined
+        () => undefined,
       );
     });
   });
@@ -188,7 +188,7 @@ describe("JSONRPCServerAndClient", () => {
       it("should reject the pending request", () => {
         return promise.then(
           () => Promise.reject(new Error("Expected to fail")),
-          (error) => expect(error.message).to.equal(message)
+          (error) => expect(error.message).to.equal(message),
         );
       });
     });
@@ -206,7 +206,7 @@ describe("JSONRPCServerAndClient", () => {
       delay = 100;
       serverAndClient2.addMethod(
         "timeout",
-        () => new Promise<void>((givenResolve) => (resolve = givenResolve))
+        () => new Promise<void>((givenResolve) => (resolve = givenResolve)),
       );
 
       promise = serverAndClient1.timeout(delay).request("timeout");
@@ -221,7 +221,7 @@ describe("JSONRPCServerAndClient", () => {
       it("should reject", () => {
         return promise.then(
           () => Promise.reject(new Error("Expected to fail")),
-          () => undefined
+          () => undefined,
         );
       });
     });

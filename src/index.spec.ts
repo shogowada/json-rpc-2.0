@@ -1,6 +1,6 @@
 import "mocha";
 import { expect } from "chai";
-import { JSONRPCServer, JSONRPCClient } from ".";
+import { JSONRPCServer, JSONRPCClient } from "./index.js";
 
 describe("JSONRPCClient and JSONRPCServer", () => {
   let server: JSONRPCServer;
@@ -20,7 +20,7 @@ describe("JSONRPCClient and JSONRPCServer", () => {
           }
         });
       },
-      () => ++id
+      () => ++id,
     );
   });
 
