@@ -4,9 +4,6 @@
   "description": "JSON-RPC 2.0 client and server",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "files": [
-    "dist"
-  ],
   "scripts": {
     "format": "pretty-quick || echo \"Failed to format. Continuing...\"",
     "test": "npm run format && mocha --require ts-node/register \"./src/**/*.spec.ts\"",
