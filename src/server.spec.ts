@@ -809,6 +809,23 @@ describe("JSONRPCServer", () => {
       });
     });
 
+    describe("of an empty array", () => {
+      beforeEach(async () => {
+        responses = await server.receive([]);
+      });
+
+      it("should return error", () => {
+        expect(responses).to.deep.equal({
+          jsonrpc: JSONRPC,
+          id: null,
+          error: {
+            code: JSONRPCErrorCode.InvalidRequest,
+            message: "Invalid Request",
+          },
+        });
+      });
+    });
+
     describe("of a valid and an invalid request", () => {
       beforeEach(async () => {
         responses = await server.receive([

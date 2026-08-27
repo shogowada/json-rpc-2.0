@@ -153,6 +153,14 @@ export class JSONRPCServer<ServerParams = void> {
     requests: JSONRPCRequest[],
     serverParams?: ServerParams
   ): Promise<JSONRPCResponse | JSONRPCResponse[] | null> {
+    if (requests.length === 0) {
+      return createJSONRPCErrorResponse(
+        null,
+        JSONRPCErrorCode.InvalidRequest,
+        "Invalid Request"
+      );
+    }
+
     const responses: JSONRPCResponse[] = (
       await Promise.all(
         requests.map((request) => this.receiveSingle(request, serverParams))
