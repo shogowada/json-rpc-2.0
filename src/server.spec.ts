@@ -903,4 +903,36 @@ describe("JSONRPCServer", () => {
   });
 });
 
+describe("JSONRPCServer method registration", () => {
+  it("should not slow down as more methods are registered", () => {
+    const server = new JSONRPCServer();
+    const started = Date.now();
+
+    for (let index = 0; index < 20000; index += 1) {
+      server.addMethod(`method${index}`, () => index);
+    }
+
+    // Registering a method used to rebuild the dictionary, which took roughly
+    // 40 seconds for 20000 methods.
+    expect(Date.now() - started).to.be.below(1000);
+    expect(server.hasMethod("method19999")).to.be.true;
+  });
+
+  it("should treat prototype-related names as ordinary method names", () => {
+    const server = new JSONRPCServer();
+    server.addMethod("__proto__", () => "foo");
+
+    return server
+      .receive({ jsonrpc: JSONRPC, id: 0, method: "__proto__" })
+      .then((response) => {
+        expect(response).to.deep.equal({
+          jsonrpc: JSONRPC,
+          id: 0,
+          result: "foo",
+        });
+        expect(server.hasMethod("hasOwnProperty")).to.be.false;
+      });
+  });
+});
+
 const consumeAllEvents = () => new Promise((resolve) => setTimeout(resolve, 0));

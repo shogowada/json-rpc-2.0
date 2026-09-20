@@ -35,10 +35,6 @@ export type JSONRPCServerMiddleware<ServerParams> = (
   serverParams: ServerParams
 ) => JSONRPCResponsePromise;
 
-type NameToMethodDictionary<ServerParams> = {
-  [name: string]: JSONRPCMethod<ServerParams>;
-};
-
 const createParseErrorResponse = (): JSONRPCResponse =>
   createJSONRPCErrorResponse(null, JSONRPCErrorCode.ParseError, "Parse error");
 
@@ -61,7 +57,7 @@ export interface JSONRPCServerOptions {
 }
 
 export class JSONRPCServer<ServerParams = void> {
-  private nameToMethodDictionary: NameToMethodDictionary<ServerParams>;
+  private nameToMethodMap: Map<string, JSONRPCMethod<ServerParams>>;
   private middleware: JSONRPCServerMiddleware<ServerParams> | null;
   private readonly errorListener: ErrorListener;
 
@@ -76,13 +72,13 @@ export class JSONRPCServer<ServerParams = void> {
   ) => Promise<JSONRPCResponse | null> = defaultHandleMethodNotFound;
 
   constructor(options: JSONRPCServerOptions = {}) {
-    this.nameToMethodDictionary = {};
+    this.nameToMethodMap = new Map();
     this.middleware = null;
     this.errorListener = options.errorListener ?? console.warn;
   }
 
   hasMethod(name: string): boolean {
-    return !!this.nameToMethodDictionary[name];
+    return this.nameToMethodMap.has(name);
   }
 
   addMethod(name: string, method: SimpleJSONRPCMethod<ServerParams>): void {
@@ -90,7 +86,7 @@ export class JSONRPCServer<ServerParams = void> {
   }
 
   removeMethod(name: string): void {
-    delete this.nameToMethodDictionary[name];
+    this.nameToMethodMap.delete(name);
   }
 
   private toJSONRPCMethod(
@@ -108,10 +104,7 @@ export class JSONRPCServer<ServerParams = void> {
   }
 
   addMethodAdvanced(name: string, method: JSONRPCMethod<ServerParams>): void {
-    this.nameToMethodDictionary = {
-      ...this.nameToMethodDictionary,
-      [name]: method,
-    };
+    this.nameToMethodMap.set(name, method);
   }
 
   receiveJSON(
@@ -185,7 +178,7 @@ export class JSONRPCServer<ServerParams = void> {
     request: JSONRPCRequest,
     serverParams?: ServerParams
   ): Promise<JSONRPCResponse | null> {
-    const method = this.nameToMethodDictionary[request.method];
+    const method = this.nameToMethodMap.get(request.method);
 
     if (!isJSONRPCRequest(request)) {
       return createInvalidRequestResponse(request);
