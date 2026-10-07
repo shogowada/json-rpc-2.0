@@ -57,18 +57,18 @@ export class JSONRPCServerAndClient<ServerParams = void, ClientParams = void> {
     return this.client.timeout(delay);
   }
 
-  request(
+  request<T = any>(
     method: string,
     params: JSONRPCParams,
     clientParams: ClientParams
-  ): PromiseLike<any> {
-    return this.client.request(method, params, clientParams);
+  ): PromiseLike<T> {
+    return this.client.request<T>(method, params, clientParams);
   }
 
-  requestAdvanced(
+  requestAdvanced<T = any>(
     jsonRPCRequest: JSONRPCRequest,
     clientParams: ClientParams
-  ): PromiseLike<JSONRPCResponse>;
+  ): PromiseLike<JSONRPCResponse<T>>;
   requestAdvanced(
     jsonRPCRequest: JSONRPCRequest[],
     clientParams: ClientParams

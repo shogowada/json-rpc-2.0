@@ -14,12 +14,12 @@ export interface JSONRPCRequest {
   id?: JSONRPCID;
 }
 
-export type JSONRPCResponse = JSONRPCSuccessResponse | JSONRPCErrorResponse;
+export type JSONRPCResponse<T = any> = JSONRPCSuccessResponse<T> | JSONRPCErrorResponse;
 
-export interface JSONRPCSuccessResponse {
+export interface JSONRPCSuccessResponse<T = any> {
   jsonrpc: JSONRPC;
   id: JSONRPCID;
-  result: any;
+  result: T;
   error?: undefined;
 }
 
@@ -32,6 +32,8 @@ export interface JSONRPCErrorResponse {
 
 export const isJSONRPCRequest = (payload: any): payload is JSONRPCRequest => {
   return (
+    payload != null &&
+    typeof payload === "object" &&
     payload.jsonrpc === JSONRPC &&
     payload.method !== undefined &&
     payload.result === undefined &&
@@ -47,6 +49,8 @@ export const isJSONRPCRequests = (
 
 export const isJSONRPCResponse = (payload: any): payload is JSONRPCResponse => {
   return (
+    payload != null &&
+    typeof payload === "object" &&
     payload.jsonrpc === JSONRPC &&
     payload.id !== undefined &&
     (payload.result !== undefined || payload.error !== undefined)

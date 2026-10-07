@@ -22,15 +22,15 @@ type Resolve = (response: JSONRPCResponse) => void;
 type IDToDeferredMap = Map<JSONRPCID, Resolve>;
 
 export interface JSONRPCRequester<ClientParams> {
-  request(
+  request<T = any>(
     method: string,
     params?: JSONRPCParams,
     clientParams?: ClientParams
-  ): PromiseLike<any>;
-  requestAdvanced(
+  ): PromiseLike<T>;
+  requestAdvanced<T = any>(
     request: JSONRPCRequest,
     clientParams?: ClientParams
-  ): PromiseLike<JSONRPCResponse>;
+  ): PromiseLike<JSONRPCResponse<T>>;
   requestAdvanced(
     request: JSONRPCRequest[],
     clientParams?: ClientParams
@@ -122,23 +122,23 @@ export class JSONRPCClient<ClientParams = void>
     };
   }
 
-  request(
+  request<T = any>(
     method: string,
     params: JSONRPCParams,
     clientParams: ClientParams
-  ): PromiseLike<any> {
-    return this.requestWithID(method, params, clientParams, this._createID());
+  ): PromiseLike<T> {
+    return this.requestWithID<T>(method, params, clientParams, this._createID());
   }
 
-  private async requestWithID(
+  private async requestWithID<T = any>(
     method: string,
     params: JSONRPCParams | undefined,
     clientParams: ClientParams,
     id: JSONRPCID
-  ): Promise<any> {
+  ): Promise<T> {
     const request: JSONRPCRequest = createJSONRPCRequest(id, method, params);
 
-    const response: JSONRPCResponse = await this.requestAdvanced(
+    const response: JSONRPCResponse<T> = await this.requestAdvanced(
       request,
       clientParams
     );
@@ -157,10 +157,10 @@ export class JSONRPCClient<ClientParams = void>
     }
   }
 
-  requestAdvanced(
+  requestAdvanced<T = any>(
     request: JSONRPCRequest,
     clientParams: ClientParams
-  ): PromiseLike<JSONRPCResponse>;
+  ): PromiseLike<JSONRPCResponse<T>>;
   requestAdvanced(
     request: JSONRPCRequest[],
     clientParams: ClientParams
