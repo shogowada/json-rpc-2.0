@@ -60,32 +60,37 @@ export class JSONRPCServerAndClient<ServerParams = void, ClientParams = void> {
   request(
     method: string,
     params: JSONRPCParams,
-    clientParams: ClientParams
+    clientParams: ClientParams,
+    abortController?: AbortController,
   ): PromiseLike<any> {
-    return this.client.request(method, params, clientParams);
+    return this.client.request(method, params, clientParams, abortController);
   }
 
   requestAdvanced(
     jsonRPCRequest: JSONRPCRequest,
-    clientParams: ClientParams
+    clientParams: ClientParams,
+    abortController?: AbortController,
   ): PromiseLike<JSONRPCResponse>;
   requestAdvanced(
     jsonRPCRequest: JSONRPCRequest[],
-    clientParams: ClientParams
+    clientParams: ClientParams,
+    abortController?: AbortController,
   ): PromiseLike<JSONRPCResponse[]>;
   requestAdvanced(
     jsonRPCRequest: JSONRPCRequest | JSONRPCRequest[],
-    clientParams: ClientParams
+    clientParams: ClientParams,
+    abortController?: AbortController,
   ): PromiseLike<JSONRPCResponse | JSONRPCResponse[]> {
-    return this.client.requestAdvanced(jsonRPCRequest as any, clientParams);
+    return this.client.requestAdvanced(jsonRPCRequest as any, clientParams, abortController);
   }
 
   notify(
     method: string,
     params: JSONRPCParams,
-    clientParams: ClientParams
+    clientParams: ClientParams,
+    abortSignal?: AbortSignal,
   ): void {
-    this.client.notify(method, params, clientParams);
+    this.client.notify(method, params, clientParams, abortSignal);
   }
 
   rejectAllPendingRequests(message: string): void {

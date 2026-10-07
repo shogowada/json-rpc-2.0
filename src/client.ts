@@ -13,7 +13,8 @@ import { DefaultErrorCode } from "./internal";
 
 export type SendRequest<ClientParams> = (
   payload: any,
-  clientParams: ClientParams
+  clientParams: ClientParams,
+  abortSignal?: AbortSignal
 ) => PromiseLike<void> | void;
 export type CreateID = () => JSONRPCID;
 
@@ -25,15 +26,18 @@ export interface JSONRPCRequester<ClientParams> {
   request(
     method: string,
     params?: JSONRPCParams,
-    clientParams?: ClientParams
+    clientParams?: ClientParams,
+    abortController?: AbortController
   ): PromiseLike<any>;
   requestAdvanced(
     request: JSONRPCRequest,
-    clientParams?: ClientParams
+    clientParams?: ClientParams,
+    abortController?: AbortController
   ): PromiseLike<JSONRPCResponse>;
   requestAdvanced(
     request: JSONRPCRequest[],
-    clientParams?: ClientParams
+    clientParams?: ClientParams,
+    abortController?: AbortController
   ): PromiseLike<JSONRPCResponse[]>;
 }
 
@@ -68,21 +72,48 @@ export class JSONRPCClient<ClientParams = void>
   ): JSONRPCRequester<ClientParams> {
     const timeoutRequest = (
       ids: JSONRPCID[],
-      request: () => PromiseLike<any>
+      request: () => PromiseLike<any>,
+      abortController: AbortController
     ) => {
       const timeoutID = setTimeout(() => {
         ids.forEach((id) => {
           const resolve: Resolve | undefined = this.idToResolveMap.get(id);
           if (resolve) {
             this.idToResolveMap.delete(id);
-            resolve(overrideCreateJSONRPCErrorResponse(id));
+            const errResp = overrideCreateJSONRPCErrorResponse(id);
+            abortController.abort(errResp);
+            resolve(errResp);
           }
         });
       }, delay);
 
+      // The 'abort' event is not supported by:
+      // - browsers < 2018
+      // - nodejs < 14.17
+      // @ts-ignore
+      abortController.signal.addEventListener?.(
+        "abort",
+        () => clearTimeout(timeoutID),
+        { once: true }
+      );
+
       return request().then(
         (result) => {
           clearTimeout(timeoutID);
+          if (abortController.signal.aborted) {
+            // If result already has an error (timeout fired and resolved via the map),
+            // return it as-is rather than replacing with a generic abort error.
+            if (result && typeof result === "object" && "error" in result) {
+              return result;
+            }
+            const error =
+              typeof abortController.signal.reason === "string"
+                ? abortController.signal.reason
+                : "Aborted";
+            return Promise.reject(
+              new JSONRPCErrorException(error, DefaultErrorCode)
+            );
+          }
           return result;
         },
         (error) => {
@@ -94,13 +125,23 @@ export class JSONRPCClient<ClientParams = void>
 
     const requestAdvanced = (
       request: JSONRPCRequest | JSONRPCRequest[],
-      clientParams: ClientParams
+      clientParams: ClientParams,
+      abortController?: AbortController
     ): PromiseLike<JSONRPCResponse | JSONRPCResponse[]> => {
       const ids: JSONRPCID[] = (!Array.isArray(request) ? [request] : request)
         .map((request) => request.id)
         .filter(isDefinedAndNonNull);
-      return timeoutRequest(ids, () =>
-        this.requestAdvanced(request as any, clientParams)
+
+      const abortControllerRef = abortController ?? new AbortController();
+      return timeoutRequest(
+        ids,
+        () =>
+          this.requestAdvanced(
+            request as any,
+            clientParams,
+            abortControllerRef
+          ),
+        abortControllerRef
       );
     };
 
@@ -108,39 +149,62 @@ export class JSONRPCClient<ClientParams = void>
       request: (
         method: string,
         params: JSONRPCParams,
-        clientParams: ClientParams
+        clientParams: ClientParams,
+        abortController?: AbortController
       ): PromiseLike<any> => {
         const id: JSONRPCID = this._createID();
-        return timeoutRequest([id], () =>
-          this.requestWithID(method, params, clientParams, id)
+        const abortControllerRef = abortController ?? new AbortController();
+        return timeoutRequest(
+          [id],
+          () =>
+            this.requestWithID(
+              method,
+              params,
+              clientParams,
+              id,
+              abortControllerRef
+            ),
+          abortControllerRef
         );
       },
       requestAdvanced: (
-        request: any,
-        clientParams: ClientParams
-      ): PromiseLike<any> => requestAdvanced(request, clientParams),
+        request: JSONRPCRequest | JSONRPCRequest[],
+        clientParams: ClientParams,
+        abortController?: AbortController
+      ): PromiseLike<any> => {
+        return requestAdvanced(request, clientParams, abortController);
+      },
     };
   }
 
   request(
     method: string,
     params: JSONRPCParams,
-    clientParams: ClientParams
+    clientParams: ClientParams,
+    abortController?: AbortController
   ): PromiseLike<any> {
-    return this.requestWithID(method, params, clientParams, this._createID());
+    return this.requestWithID(
+      method,
+      params,
+      clientParams,
+      this._createID(),
+      abortController
+    );
   }
 
   private async requestWithID(
     method: string,
     params: JSONRPCParams | undefined,
     clientParams: ClientParams,
-    id: JSONRPCID
+    id: JSONRPCID,
+    abortController?: AbortController
   ): Promise<any> {
     const request: JSONRPCRequest = createJSONRPCRequest(id, method, params);
 
     const response: JSONRPCResponse = await this.requestAdvanced(
       request,
-      clientParams
+      clientParams,
+      abortController
     );
     if (response.result !== undefined && !response.error) {
       return response.result;
@@ -159,15 +223,18 @@ export class JSONRPCClient<ClientParams = void>
 
   requestAdvanced(
     request: JSONRPCRequest,
-    clientParams: ClientParams
+    clientParams: ClientParams,
+    abortController?: AbortController
   ): PromiseLike<JSONRPCResponse>;
   requestAdvanced(
     request: JSONRPCRequest[],
-    clientParams: ClientParams
+    clientParams: ClientParams,
+    abortController?: AbortController
   ): PromiseLike<JSONRPCResponse[]>;
   requestAdvanced(
     requests: JSONRPCRequest | JSONRPCRequest[],
-    clientParams: ClientParams
+    clientParams: ClientParams,
+    abortController?: AbortController
   ): PromiseLike<JSONRPCResponse | JSONRPCResponse[]> {
     const areRequestsOriginallyArray = Array.isArray(requests);
     if (!Array.isArray(requests)) {
@@ -194,7 +261,8 @@ export class JSONRPCClient<ClientParams = void>
 
     return this.send(
       areRequestsOriginallyArray ? requests : requests[0],
-      clientParams
+      clientParams,
+      abortController?.signal
     ).then(
       () => promise,
       (error) => {
@@ -215,15 +283,19 @@ export class JSONRPCClient<ClientParams = void>
   notify(
     method: string,
     params: JSONRPCParams,
-    clientParams: ClientParams
+    clientParams: ClientParams,
+    abortSignal?: AbortSignal
   ): void {
     const request: JSONRPCRequest = createJSONRPCNotification(method, params);
-
-    this.send(request, clientParams).then(undefined, () => undefined);
+    void this.send(request, clientParams, abortSignal);
   }
 
-  async send(payload: any, clientParams: ClientParams): Promise<void> {
-    return this._send(payload, clientParams);
+  async send(
+    payload: any,
+    clientParams: ClientParams,
+    abortSignal?: AbortSignal
+  ): Promise<void> {
+    return this._send(payload, clientParams, abortSignal);
   }
 
   rejectAllPendingRequests(message: string): void {

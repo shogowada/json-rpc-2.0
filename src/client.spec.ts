@@ -17,6 +17,12 @@ interface ClientParams {
   token: string;
 }
 
+const expectToBeRejected = (promise: PromiseLike<any>): PromiseLike<void> =>
+  promise.then(
+    () => Promise.reject(new Error("Expected to reject")),
+    () => undefined
+  );
+
 describe("JSONRPCClient", () => {
   let client: JSONRPCClient<ClientParams>;
 
@@ -25,19 +31,24 @@ describe("JSONRPCClient", () => {
   let lastClientParams: ClientParams | undefined;
   let resolve: (() => void) | undefined;
   let reject: ((error: any) => void) | undefined;
+  let lastAbortSignal: AbortSignal | undefined;
 
   beforeEach(() => {
     id = 0;
     lastRequest = undefined;
+    lastClientParams = undefined;
+    lastAbortSignal = undefined;
     resolve = undefined;
     reject = undefined;
 
     const send = (
       request: JSONRPCRequest,
-      clientParams: ClientParams
+      clientParams: ClientParams,
+      abortSignal?: AbortSignal
     ): PromiseLike<void> => {
       lastRequest = request;
       lastClientParams = clientParams;
+      lastAbortSignal = abortSignal;
       return new Promise((givenResolve, givenReject) => {
         resolve = givenResolve;
         reject = givenReject;
@@ -333,10 +344,23 @@ describe("JSONRPCClient", () => {
       });
 
       it("should reject", () => {
-        return promise.then(
-          () => Promise.reject(new Error("Expected to fail")),
-          () => undefined
+        return expectToBeRejected(promise);
+      });
+
+      it("should reject with a proper timeout error", async () => {
+        let error;
+        try {
+          await promise;
+          throw new Error("Expected to fail");
+        } catch (e) {
+          error = e;
+        }
+
+        expect(error).to.be.instanceOf(JSONRPCErrorException);
+        expect((error as JSONRPCErrorException).message).to.equal(
+          "Request timeout"
         );
+        expect((error as JSONRPCErrorException).code).to.equal(0);
       });
     });
 
@@ -482,6 +506,141 @@ describe("JSONRPCClient", () => {
 
     it("should pass the client params to send function", () => {
       expect(lastClientParams).to.deep.equal(expected);
+    });
+  });
+
+  describe("abort signal", () => {
+    describe("request", () => {
+      it("should pass abortSignal to send", () => {
+        const ac = new AbortController();
+        client.request("foo", ["bar"], { token: "" }, ac);
+        expect(lastAbortSignal).to.equal(ac.signal);
+      });
+
+      it("should have aborted signal after abort() is called", () => {
+        const ac = new AbortController();
+        client.request("foo", ["bar"], { token: "" }, ac);
+        ac.abort();
+        expect(lastAbortSignal!.aborted).to.be.true;
+      });
+    });
+
+    describe("requestAdvanced", () => {
+      it("should pass abortSignal to send", () => {
+        const ac = new AbortController();
+        client.requestAdvanced(
+          { jsonrpc: JSONRPC, id: ++id, method: "foo" },
+          { token: "" },
+          ac
+        );
+        expect(lastAbortSignal).to.equal(ac.signal);
+      });
+
+      it("should have aborted signal after abort() is called", () => {
+        const ac = new AbortController();
+        client.requestAdvanced(
+          { jsonrpc: JSONRPC, id: ++id, method: "foo" },
+          { token: "" },
+          ac
+        );
+        ac.abort();
+        expect(lastAbortSignal!.aborted).to.be.true;
+      });
+    });
+
+    describe("notify", () => {
+      it("should pass abortSignal to send", () => {
+        const ac = new AbortController();
+        client.notify("foo", ["bar"], { token: "" }, ac.signal);
+        expect(lastAbortSignal).to.equal(ac.signal);
+      });
+
+      it("should have aborted signal after abort() is called", () => {
+        const ac = new AbortController();
+        client.notify("foo", ["bar"], { token: "" }, ac.signal);
+        ac.abort();
+        expect(lastAbortSignal!.aborted).to.be.true;
+      });
+    });
+  });
+
+  describe("timeout abort signal", () => {
+    let fakeTimers: sinon.SinonFakeTimers;
+    let delay: number;
+
+    beforeEach(() => {
+      fakeTimers = sinon.useFakeTimers();
+      delay = 1000;
+    });
+
+    afterEach(() => {
+      fakeTimers.restore();
+    });
+
+    describe("aborted by timeout via default controller", () => {
+      it("should abort the internal controller when timeout fires", () => {
+        const promise = client.timeout(delay).request("foo");
+        resolve!();
+
+        expect(lastAbortSignal!.aborted).to.be.false;
+
+        fakeTimers.tick(delay);
+
+        expect(lastAbortSignal!.aborted).to.be.true;
+
+        return expectToBeRejected(promise);
+      });
+    });
+
+    describe("aborted by timeout via external controller", () => {
+      it("should abort the external controller when timeout fires", () => {
+        const ac = new AbortController();
+        const promise = client
+          .timeout(delay)
+          .request("foo", undefined, undefined, ac);
+        resolve!();
+
+        expect(lastAbortSignal).to.equal(ac.signal);
+        expect(lastAbortSignal!.aborted).to.be.false;
+
+        fakeTimers.tick(delay);
+
+        expect(ac.signal.aborted).to.be.true;
+
+        return expectToBeRejected(promise);
+      });
+    });
+
+    describe("aborted by external code before timeout", () => {
+      it("should clear timeout and reject when external abort is called before timeout fires", () => {
+        const ac = new AbortController();
+        let error: any;
+        const promise = client
+          .timeout(delay)
+          .request("foo", undefined, undefined, ac)
+          .then(
+            () => undefined,
+            (e) => (error = e)
+          );
+        resolve!();
+
+        // Abort externally before timeout
+        ac.abort("Cancelled by user");
+        expect(ac.signal.aborted).to.be.true;
+
+        // Complete the in-flight request — the .aborted guard will reject it
+        client.receive({
+          jsonrpc: JSONRPC,
+          id: lastRequest!.id!,
+          result: "bar",
+        });
+
+        return promise.then(() => {
+          expect(error).to.be.instanceOf(JSONRPCErrorException);
+          expect(error.message).to.equal("Cancelled by user");
+          expect(error.code).to.equal(0);
+        });
+      });
     });
   });
 });
